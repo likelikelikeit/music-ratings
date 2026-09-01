@@ -1,0 +1,2553 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>음악 기록</title>
+<style>
+:root{
+  --bg:#f5f5f7; --elev:#ffffff; --sunken:#ececee;
+  --text:#1d1d1f; --text-2:#6e6e73; --text-3:#a1a1a6;
+  --sep:rgba(0,0,0,.09); --sep-2:rgba(0,0,0,.15);
+  --accent:#0071e3;
+  --chip:rgba(0,0,0,.045); --chip-h:rgba(0,0,0,.08); --field:rgba(0,0,0,.05);
+  --glass:rgba(255,255,255,.68); --glass-hi:rgba(255,255,255,.7); --glass-lo:rgba(0,0,0,.05);
+  --sh-1:0 1px 2px rgba(0,0,0,.05);
+  --sh-2:0 6px 22px rgba(0,0,0,.09);
+  --sh-3:0 24px 70px rgba(0,0,0,.24);
+  --r:14px; --r-s:10px;
+  --tint:transparent;
+  color-scheme:light;
+}
+[data-theme="dark"]{
+  --bg:#000; --elev:#1c1c1e; --sunken:#141416;
+  --text:#f5f5f7; --text-2:#a1a1a6; --text-3:#78787d;
+  --sep:rgba(255,255,255,.11); --sep-2:rgba(255,255,255,.2);
+  --accent:#0a84ff;
+  --chip:rgba(255,255,255,.08); --chip-h:rgba(255,255,255,.14); --field:rgba(255,255,255,.07);
+  --glass:rgba(28,28,30,.66); --glass-hi:rgba(255,255,255,.14); --glass-lo:rgba(0,0,0,.4);
+  --sh-1:0 1px 2px rgba(0,0,0,.4);
+  --sh-2:0 6px 22px rgba(0,0,0,.5);
+  --sh-3:0 24px 70px rgba(0,0,0,.75);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; font-size:15px; line-height:1.5; letter-spacing:-.011em;
+  overflow-x:hidden; overscroll-behavior-y:none;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+body::before{
+  content:""; position:fixed; inset:-20vh -20vw auto; height:78vh; z-index:0; pointer-events:none;
+  background:var(--tint); filter:blur(90px); opacity:.5;
+  transition:background .5s ease, opacity .5s ease;
+}
+body.noglass::before{display:none}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer;border:none;background:none;padding:0}
+input,textarea,select{font-size:16px}
+::selection{background:color-mix(in srgb,var(--accent) 26%,transparent)}
+:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px;border-radius:7px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+/* ============ 상단 바 ============ */
+.bar{position:sticky;top:0;z-index:40;background:var(--glass);border-bottom:.5px solid var(--sep)}
+.glass .bar{-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
+body.noglass .bar{background:var(--bg)}
+.bar-in{max-width:1280px;margin:0 auto;padding:10px 22px;display:flex;align-items:center;gap:12px}
+.brand{font-size:18.5px;font-weight:600;letter-spacing:-.032em;white-space:nowrap}
+.brand em{font-style:normal;color:var(--text-3);font-weight:400}
+.grow{flex:1}
+.searchbox{display:flex;align-items:center;gap:7px;background:var(--field);border-radius:9px;padding:5px 11px;flex:0 1 300px;min-width:130px}
+.searchbox input{border:none;background:none;outline:none;width:100%;font-size:14.5px;min-width:0}
+.searchbox input::placeholder{color:var(--text-3)}
+.searchbox svg{flex:none;color:var(--text-3)}
+.btn{background:var(--chip);border-radius:9px;padding:6px 13px;font-size:14px;font-weight:500;white-space:nowrap;transition:background .15s,transform .1s}
+.btn:hover{background:var(--chip-h)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.icon{padding:6px 9px;display:inline-flex;align-items:center;justify-content:center}
+.btn.ghost{background:none}
+.btn.ghost:hover{background:var(--chip)}
+.btn.del{color:#d70015}
+[data-theme="dark"] .btn.del{color:#ff453a}
+.savechip{font-size:12.5px;color:var(--text-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* 뷰 전환 세그먼트 */
+.seg{display:inline-flex;background:var(--field);border-radius:10px;padding:2px;gap:2px}
+.seg button{padding:5px 13px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text-2);transition:.15s;white-space:nowrap}
+.seg button.on{background:var(--elev);color:var(--text);box-shadow:var(--sh-1)}
+.seg.sm button{padding:4px 10px;font-size:13px}
+
+/* 메뉴 */
+.menuwrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 8px);min-width:230px;background:var(--glass);border:.5px solid var(--sep-2);border-radius:13px;box-shadow:var(--sh-2);padding:6px;display:none;z-index:60}
+.glass .menu{-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
+body.noglass .menu{background:var(--elev)}
+.menu.open{display:block}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;padding:8px 11px;border-radius:9px;font-size:14px;text-align:left}
+.menu button:hover{background:var(--chip)}
+.menu .div{height:.5px;background:var(--sep);margin:6px 4px}
+.menu .lab{padding:8px 11px 4px;font-size:12px;color:var(--text-3)}
+.menu .row{display:flex;gap:6px;padding:2px 8px 8px}
+
+/* ============ 레이아웃 ============ */
+.wrap{max-width:1280px;margin:0 auto;padding:22px 22px 120px;position:relative;z-index:1}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.count{font-size:13.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
+select.sel{background:var(--field);border:none;border-radius:9px;padding:6px 10px;font-size:14px;outline:none;-webkit-appearance:none;appearance:none;padding-right:26px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center}
+.empty{text-align:center;padding:14vh 20px;color:var(--text-2)}
+.empty h2{font-size:21px;font-weight:600;letter-spacing:-.03em;margin:0 0 8px;color:var(--text)}
+.empty p{margin:0 0 18px;font-size:14.5px}
+
+/* ============ 앨범 그리드 ============ */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:22px 18px}
+.card{text-align:left;width:100%;display:block}
+.art{position:relative;width:100%;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--sunken);box-shadow:var(--sh-1);transition:transform .18s cubic-bezier(.2,.7,.3,1),box-shadow .18s}
+.card:hover .art{transform:translateY(-3px);box-shadow:var(--sh-2)}
+.card:active .art{transform:translateY(-1px) scale(.985)}
+.art img{width:100%;height:100%;object-fit:cover;display:block}
+.art .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#fff;text-align:center;padding:10px;line-height:1.25;letter-spacing:-.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.badge{position:absolute;right:7px;bottom:7px;min-width:38px;height:24px;padding:0 7px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;color:#fff;letter-spacing:-.02em;
+  background:rgba(0,0,0,.42);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 .5px 0 rgba(255,255,255,.4)}
+.badge.none{color:rgba(255,255,255,.75)}
+.meta{padding:9px 2px 0}
+.meta .t{font-size:14px;font-weight:550;letter-spacing:-.02em;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.meta .a{font-size:13px;color:var(--text-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ============ 점수 컨트롤 ============ */
+.score{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:54px;height:29px;padding:0 9px;
+  border-radius:9px;background:var(--field);font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+  cursor:ew-resize;touch-action:pan-y;user-select:none;-webkit-user-select:none;overflow:hidden;
+  transition:transform .12s cubic-bezier(.2,.7,.3,1),box-shadow .15s}
+.score .fill{position:absolute;left:0;top:0;bottom:0;background:currentColor;opacity:.15;transition:width .1s linear}
+.score .v{position:relative;z-index:1}
+.score.set{box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 26%,transparent)}
+.score.dragging{transform:scale(1.08);box-shadow:0 2px 10px color-mix(in srgb,currentColor 30%,transparent)}
+.score:hover .fill{opacity:.22}
+.score input{position:absolute;inset:0;width:100%;height:100%;border:none;background:var(--elev);text-align:center;
+  font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;outline:none;z-index:2;padding:0}
+.rangewrap{position:relative;display:flex;align-items:center;height:30px;flex:1;min-width:100px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:var(--rt,var(--field));outline:none;margin:0;touch-action:pan-y}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;cursor:grab;
+  box-shadow:0 1px 4px rgba(0,0,0,.28),0 0 0 .5px rgba(0,0,0,.06);transition:transform .12s}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.14);cursor:grabbing}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.28)}
+[data-theme="dark"] input[type=range]::-webkit-slider-thumb{background:#f5f5f7}
+[data-theme="dark"] input[type=range]::-moz-range-thumb{background:#f5f5f7}
+
+/* 큰 점수(앨범 헤더) */
+.bigscore{display:flex;align-items:baseline;gap:2px;font-size:46px;font-weight:680;letter-spacing:-.045em;font-variant-numeric:tabular-nums;
+  line-height:1;cursor:ew-resize;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .12s}
+.bigscore.dragging{transform:scale(1.04)}
+.bigscore .of{font-size:17px;font-weight:500;color:var(--text-3);letter-spacing:-.02em}
+.raterow{display:flex;align-items:center;gap:16px;margin:14px 0 12px}
+.numin{width:66px;height:32px;background:var(--field);border:none;border-radius:9px;text-align:center;font-size:15px;font-weight:600;
+  font-variant-numeric:tabular-nums;outline:none}
+.hint{font-size:12.5px;color:var(--text-3)}
+.rate-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ============ 시트 ============ */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:70;opacity:0;pointer-events:none;transition:opacity .28s}
+.glass .scrim{-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:var(--elev);z-index:80;box-shadow:var(--sh-3);
+  transform:translateX(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sheet.show{transform:none}
+.sheet-close{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;padding:12px 16px;background:linear-gradient(var(--elev) 55%,transparent)}
+.sheet-body{padding:0 26px 60px}
+.sec{padding:20px 0;border-top:.5px solid var(--sep)}
+.sec:first-of-type{border-top:none}
+.sec h3{font-size:12.5px;font-weight:600;color:var(--text-2);margin:0 0 10px;letter-spacing:-.01em}
+.hero{position:relative;margin:-52px -26px 0;padding:60px 26px 22px;overflow:hidden}
+.hero .wash{position:absolute;inset:-30% -10% auto;height:190%;width:120%;object-fit:cover;filter:blur(56px) saturate(210%);opacity:.5;transform:scale(1.2)}
+body.noglass .hero .wash{display:none}
+.hero-row{position:relative;display:flex;gap:18px;align-items:flex-end}
+.hero-art{width:132px;height:132px;flex:none;border-radius:12px;overflow:hidden;background:var(--sunken);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.hero-art img{width:100%;height:100%;object-fit:cover;display:block}
+.hero h1{font-size:25px;font-weight:680;letter-spacing:-.035em;line-height:1.18;margin:0 0 4px}
+.hero .who{font-size:15.5px;color:var(--accent);font-weight:530;cursor:pointer}
+.hero .who:hover{text-decoration:underline}
+.hero .facts{font-size:13px;color:var(--text-2);margin-top:5px}
+.review{width:100%;min-height:76px;background:var(--field);border:none;border-radius:12px;padding:11px 13px;font-size:14.5px;line-height:1.55;resize:vertical;outline:none}
+.review::placeholder{color:var(--text-3)}
+.review:focus{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}
+
+/* 수록곡 행 */
+.tracks{display:flex;flex-direction:column}
+.trow{display:grid;grid-template-columns:26px 1fr auto auto;gap:10px;align-items:center;padding:7px 8px;border-radius:10px;margin:0 -8px;transition:background .15s}
+.trow:hover{background:var(--chip)}
+.trow.open{background:var(--chip)}
+.trow .no{font-size:12.5px;color:var(--text-3);text-align:right;font-variant-numeric:tabular-nums}
+.trow .tt{font-size:14.5px;letter-spacing:-.015em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.trow .dur{font-size:12.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.tedit{margin:2px -8px 8px;padding:12px 12px 13px;background:var(--sunken);border-radius:12px;display:flex;flex-direction:column;gap:10px}
+.tedit .line{display:flex;align-items:center;gap:12px}
+.tedit input.note{flex:1;background:var(--field);border:none;border-radius:9px;padding:8px 11px;font-size:14px;outline:none;min-width:0}
+.tedit .marks{display:flex;gap:5px;flex-wrap:wrap}
+.mark{font-size:12.5px;padding:3px 9px;border-radius:7px;background:var(--chip);font-variant-numeric:tabular-nums;font-weight:550}
+.mark:hover{background:var(--chip-h)}
+
+/* ============ 곡 테이블 ============ */
+.thead,.lrow{display:grid;grid-template-columns:34px 1fr 1.1fr 62px 76px;gap:12px;align-items:center}
+.thead{padding:0 10px 8px;font-size:12px;color:var(--text-3);border-bottom:.5px solid var(--sep);position:sticky;top:53px;background:var(--bg);z-index:5}
+.thead button{font-size:12px;color:var(--text-3);text-align:left}
+.thead button.on{color:var(--text)}
+.lrow{padding:8px 10px;border-radius:11px;transition:background .12s}
+.lrow:hover{background:var(--chip)}
+.lrow .idx{font-size:12.5px;color:var(--text-3);text-align:right;font-variant-numeric:tabular-nums}
+.lrow .main{display:flex;align-items:center;gap:11px;min-width:0}
+.lrow .mini{width:36px;height:36px;border-radius:7px;object-fit:cover;flex:none;background:var(--sunken)}
+.lrow .tt{font-size:14.5px;letter-spacing:-.015em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.lrow .sub{font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .sub b{font-weight:400;color:var(--text-2)}
+.lrow .dur{font-size:12.5px;color:var(--text-3);font-variant-numeric:tabular-nums;text-align:right}
+
+/* ============ 아티스트 ============ */
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.acard{display:flex;align-items:center;gap:13px;padding:12px;border-radius:14px;background:var(--elev);box-shadow:var(--sh-1);text-align:left;transition:transform .16s,box-shadow .16s}
+.acard:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
+.mosaic{width:56px;height:56px;border-radius:50%;overflow:hidden;flex:none;display:grid;grid-template-columns:1fr 1fr;background:var(--sunken)}
+.mosaic img{width:100%;height:100%;object-fit:cover}
+.mosaic.one{grid-template-columns:1fr}
+.mosaic .ph{grid-column:1/-1;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:600;color:#fff}
+.acard .nm{font-size:15px;font-weight:600;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acard .st{font-size:12.5px;color:var(--text-2);margin-top:2px;font-variant-numeric:tabular-nums}
+.discog{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:14px 12px;margin-top:4px}
+.dyear{font-size:12px;color:var(--text-3);margin-top:5px;font-variant-numeric:tabular-nums}
+.cmpwrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cmpcol{background:var(--field);border-radius:14px;padding:14px}
+.cmprow{display:flex;justify-content:space-between;font-size:13.5px;padding:5px 0;border-top:.5px solid var(--sep)}
+.cmprow:first-of-type{border-top:none}
+.cmprow b{font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ============ 통계 ============ */
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:22px}
+.stat{background:var(--elev);border-radius:14px;padding:14px 15px;box-shadow:var(--sh-1)}
+.stat .k{font-size:12.5px;color:var(--text-2)}
+.stat .v{font-size:27px;font-weight:680;letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin-top:3px;line-height:1.1}
+.stat .s{font-size:12px;color:var(--text-3);margin-top:2px}
+.panel{background:var(--elev);border-radius:16px;padding:17px 18px;box-shadow:var(--sh-1);margin-bottom:16px}
+.panel h3{font-size:15px;font-weight:620;letter-spacing:-.022em;margin:0 0 3px}
+.panel .cap{font-size:12.5px;color:var(--text-2);margin:0 0 14px}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ranklist{display:flex;flex-direction:column}
+.rank{display:grid;grid-template-columns:24px 1fr auto;gap:11px;align-items:center;padding:7px 8px;border-radius:9px;margin:0 -8px;font-size:14px}
+.rank:hover{background:var(--chip)}
+.rank .i{font-size:12.5px;color:var(--text-3);text-align:right;font-variant-numeric:tabular-nums}
+.rank .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.rank .n small{color:var(--text-2);font-size:12.5px}
+.rank .sc{font-variant-numeric:tabular-nums;font-weight:640;font-size:14px}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg.chart text{fill:var(--text-3);font-size:10.5px;font-family:inherit}
+svg.chart .gl{stroke:var(--sep)}
+
+/* ============ 다이얼로그 ============ */
+.dlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.97);width:min(560px,calc(100% - 32px));max-height:min(78vh,720px);
+  background:var(--elev);border-radius:18px;box-shadow:var(--sh-3);z-index:90;display:flex;flex-direction:column;opacity:0;pointer-events:none;
+  transition:opacity .22s,transform .22s cubic-bezier(.2,.8,.3,1)}
+.dlg.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.dlg-head{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:.5px solid var(--sep)}
+.dlg-head h2{font-size:16px;font-weight:620;letter-spacing:-.025em;margin:0;flex:1}
+.dlg-body{padding:16px 18px 20px;overflow-y:auto}
+.field{display:block;margin-bottom:11px}
+.field span{display:block;font-size:12.5px;color:var(--text-2);margin-bottom:5px}
+.field input,.field textarea{width:100%;background:var(--field);border:none;border-radius:10px;padding:9px 12px;font-size:15px;outline:none}
+.field input:focus,.field textarea:focus{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.res{display:flex;flex-direction:column;gap:2px;margin-top:14px}
+.rescard{display:flex;align-items:center;gap:12px;padding:9px;border-radius:11px;text-align:left;width:100%;transition:background .12s}
+.rescard:hover{background:var(--chip)}
+.rescard img{width:48px;height:48px;border-radius:7px;object-fit:cover;flex:none;background:var(--sunken)}
+.rescard .t{font-size:14.5px;font-weight:550;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rescard .s{font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rescard .add{font-size:13px;color:var(--accent);font-weight:550;white-space:nowrap}
+.spin{width:15px;height:15px;border:2px solid var(--sep-2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;display:inline-block;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.textout{width:100%;height:220px;background:var(--field);border:none;border-radius:12px;padding:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.45;outline:none;resize:vertical;white-space:pre;overflow:auto}
+
+/* ============ 토스트 / 드롭 ============ */
+.toast{position:fixed;left:50%;bottom:max(28px,calc(env(safe-area-inset-bottom) + 74px));transform:translate(-50%,14px);
+  background:rgba(28,28,30,.94);color:#fff;padding:11px 17px;border-radius:12px;font-size:14px;z-index:120;opacity:0;pointer-events:none;
+  transition:opacity .22s,transform .22s;box-shadow:var(--sh-2);max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.drop{position:fixed;inset:0;z-index:110;background:color-mix(in srgb,var(--accent) 12%,transparent);border:3px dashed var(--accent);
+  display:none;align-items:center;justify-content:center;font-size:17px;font-weight:600;color:var(--accent)}
+.drop.show{display:flex}
+
+/* ============ 모바일 탭바 ============ */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;background:var(--glass);border-top:.5px solid var(--sep);
+  padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.glass .tabbar{-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
+body.noglass .tabbar{background:var(--elev)}
+.tabbar .in{display:flex;max-width:520px;margin:0 auto}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;font-size:10.5px;color:var(--text-3);font-weight:500}
+.tabbar button.on{color:var(--accent)}
+
+@media (max-width:820px){
+  .bar-in{padding:9px 14px;gap:9px}
+  .wrap{padding:16px 14px 130px}
+  .tabbar{display:block}
+  #topSeg{display:none}
+  .brand em{display:none}
+  .sheet{width:100%;top:auto;height:94dvh;border-radius:16px 16px 0 0;transform:translateY(100%)}
+  .sheet.show{transform:none}
+  .sheet-body{padding:0 18px 90px}
+  .hero{margin:-52px -18px 0;padding:56px 18px 20px}
+  .hero-art{width:104px;height:104px}
+  .hero h1{font-size:22px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:18px 14px}
+  .thead,.lrow{grid-template-columns:1fr 68px;gap:8px}
+  .thead .h-idx,.thead .h-sub,.thead .h-dur,.lrow .idx,.lrow .sub,.lrow .dur{display:none}
+  .lrow .sub2{display:block;font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .thead{top:47px}
+  .cols2,.cmpwrap{grid-template-columns:1fr}
+  .statgrid{grid-template-columns:1fr 1fr;gap:10px}
+  .trow{grid-template-columns:22px 1fr auto;gap:8px}
+  .trow .dur{display:none}
+}
+@media (min-width:821px){.lrow .sub2{display:none}}
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brand">음악 기록<em> · 별점</em></div>
+    <div class="seg" id="topSeg">
+      <button data-view="albums" class="on">앨범</button>
+      <button data-view="tracks">곡</button>
+      <button data-view="artists">아티스트</button>
+      <button data-view="stats">통계</button>
+    </div>
+    <div class="grow"></div>
+    <label class="searchbox">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
+      <input id="q" placeholder="검색" autocomplete="off">
+    </label>
+    <button class="btn primary" id="openAdd">추가</button>
+    <span class="savechip" id="savechip">불러오는 중…</span>
+    <div class="menuwrap">
+      <button class="btn icon" id="menuBtn" aria-label="메뉴">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
+      </button>
+      <div class="menu" id="menu">
+        <div class="lab">모양</div>
+        <div class="row">
+          <div class="seg sm" id="themeSeg" style="flex:1">
+            <button data-theme="auto" style="flex:1">자동</button>
+            <button data-theme="light" style="flex:1">라이트</button>
+            <button data-theme="dark" style="flex:1">다크</button>
+          </div>
+        </div>
+        <button data-act="glass"><span id="glassLabel">유리 효과 끄기</span></button>
+        <div class="div"></div>
+        <div class="lab">데이터</div>
+        <button data-act="json">JSON으로 내보내기</button>
+        <button data-act="csv">CSV로 내보내기</button>
+        <button data-act="import">파일에서 가져오기</button>
+        <button data-act="snaps">복구 지점 열기</button>
+        <div class="div"></div>
+        <div class="lab">동기화</div>
+        <button data-act="sync">지금 동기화</button>
+        <button data-act="ghcfg">GitHub 연결 설정…</button>
+        <div class="div"></div>
+        <div class="lab">검색 스토어</div>
+        <div class="row">
+          <div class="seg sm" id="ctrySeg" style="flex:1">
+            <button data-c="KR" style="flex:1">한국</button>
+            <button data-c="US" style="flex:1">미국</button>
+            <button data-c="JP" style="flex:1">일본</button>
+            <button data-c="GB" style="flex:1">영국</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="wrap"></div>
+
+<div class="tabbar">
+  <div class="in">
+    <button data-view="albums" class="on">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>앨범</button>
+    <button data-view="tracks">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>곡</button>
+    <button data-view="artists">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>아티스트</button>
+    <button data-view="stats">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>통계</button>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="sheet-close"><button class="btn icon" id="sheetClose" aria-label="닫기">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button></div>
+  <div class="sheet-body" id="sheetBody"></div>
+</div>
+
+<div class="dlg" id="dlg" role="dialog" aria-modal="true">
+  <div class="dlg-head">
+    <h2 id="dlgTitle">추가</h2>
+    <button class="btn icon" id="dlgClose" aria-label="닫기">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="dlg-body" id="dlgBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="drop" id="drop">놓으면 가져옵니다</div>
+<input type="file" id="file" accept=".json,.csv,.txt,application/json,text/csv" style="display:none">
+
+<script>
+"use strict";
+
+/* ==================== 상태 ==================== */
+const KEY = "music_lib_v2";
+const OLD_KEY = "album_ratings_v1";
+const SNAP_KEYS = ["snap_0", "snap_1", "snap_2"];
+
+let db = {
+  version: 2, albums: [], tracks: [], artists: [],
+  settings: { theme: "auto", glass: true, country: "KR", bayes: true }
+};
+let ui = {
+  view: "albums", q: "", albSort: "added", albFilter: "all",
+  trkSort: "rating", trkFilter: "rated", artSort: "score",
+  sheet: null,              // {kind:'album'|'track'|'artist', id}
+  openTrack: null, cmp: [], statMode: "track", dlg: null
+};
+let storageOK = true, dirty = false;
+
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const el = {
+  wrap: $("#wrap"), sheet: $("#sheet"), sheetBody: $("#sheetBody"), scrim: $("#scrim"),
+  dlg: $("#dlg"), dlgBody: $("#dlgBody"), dlgTitle: $("#dlgTitle"), toast: $("#toast"),
+  menu: $("#menu"), savechip: $("#savechip"), file: $("#file"), drop: $("#drop")
+};
+
+/* ==================== 유틸 ==================== */
+const uid = (p) => (p || "x") + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clamp = (n) => Math.max(0, Math.min(10, n));
+const r1 = (n) => Math.round(n * 10) / 10;
+const fmt = (n) => (n === null || n === undefined || n === "" || isNaN(n)) ? "" : Number(n).toFixed(1);
+const isNum = (v) => typeof v === "number" && !isNaN(v);
+const now = () => Date.now();
+function dur(ms) {
+  if (!ms) return "";
+  const s = Math.round(ms / 1000);
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+}
+function akey(name) {
+  return String(name || "").toLowerCase().normalize("NFKC")
+    .replace(/^the\s+/, "").replace(/[·・,'"’”“`.\-_&()\[\]]/g, " ").replace(/\s+/g, " ").trim();
+}
+function toast(msg) {
+  el.toast.textContent = msg;
+  el.toast.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.toast.classList.remove("show"), 2600);
+}
+const mean = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : null;
+function sd(a) {
+  if (a.length < 2) return null;
+  const m = mean(a);
+  return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / (a.length - 1));
+}
+
+/* 점수 → 색. 라이트/다크 각각의 정지점을 선형 보간한다. */
+const RAMP_L = [[0,[142,142,147]],[2.5,[214,124,60]],[4.5,[201,152,20]],[6,[150,164,44]],[7.5,[52,152,84]],[8.8,[24,152,104]],[10,[10,145,120]]];
+const RAMP_D = [[0,[152,152,157]],[2.5,[236,150,84]],[4.5,[228,182,52]],[6,[178,196,70]],[7.5,[86,196,116]],[8.8,[56,200,140]],[10,[46,196,164]]];
+function hue(v) {
+  if (!isNum(v)) return "var(--text-3)";
+  const R = document.documentElement.dataset.theme === "dark" ? RAMP_D : RAMP_L;
+  let i = 0;
+  while (i < R.length - 2 && v > R[i + 1][0]) i++;
+  const [x0, c0] = R[i], [x1, c1] = R[i + 1];
+  const t = x1 === x0 ? 0 : (v - x0) / (x1 - x0);
+  const c = c0.map((n, k) => Math.round(n + (c1[k] - n) * t));
+  return `rgb(${c[0]} ${c[1]} ${c[2]})`;
+}
+/* 커버 없는 앨범용 결정론적 그라데이션 */
+function seedHue(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360;
+  return h;
+}
+function fauxCover(title, artist) {
+  const h = seedHue((title || "") + (artist || ""));
+  return `linear-gradient(145deg,hsl(${h} 62% 58%),hsl(${(h + 48) % 360} 58% 42%))`;
+}
+
+/* ==================== 저장 ====================
+   1) 모든 변경은 즉시 이 브라우저에 저장된다 (오프라인에서도 안전).
+   2) GitHub를 연결해 두면 몇 초 뒤 저장소의 JSON 파일로 밀어 올린다.
+      커밋이 쌓이므로 모든 변경에 되돌릴 수 있는 이력이 남는다.
+   토큰은 이 브라우저에만 두고, 내보내는 JSON에는 절대 넣지 않는다. */
+const LS = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+const GH_KEY = "music_gh_cfg";
+let gh = { token: "", repo: "", path: "data.json", branch: "main", sha: null, lastSync: 0 };
+const ghOn = () => !!(gh.token && gh.repo);
+let syncing = false, pushT = null;
+
+function loadGH() {
+  try {
+    const c = JSON.parse(LS.get(GH_KEY) || "{}");
+    gh = Object.assign(gh, c);
+  } catch (e) { /* 설정이 깨졌으면 기본값 */ }
+}
+function saveGH() {
+  LS.set(GH_KEY, JSON.stringify(gh));
+}
+const setSave = (t) => { el.savechip.textContent = t; };
+function statusText() {
+  if (!ghOn()) return storageOK ? "이 브라우저에 저장됨" : "저장 안 됨";
+  if (syncing) return "동기화 중…";
+  if (!gh.lastSync) return "연결됨 · 아직 동기화 안 함";
+  return "동기화 " + new Date(gh.lastSync).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+}
+
+/* ---------- GitHub Contents API ---------- */
+const ghURL = () => `https://api.github.com/repos/${gh.repo}/contents/${encodeURI(gh.path)}`;
+const ghHead = () => ({ Authorization: "Bearer " + gh.token, Accept: "application/vnd.github+json" });
+function b64encode(text) {
+  const bytes = new TextEncoder().encode(text);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+function b64decode(b64) {
+  const bin = atob(String(b64).replace(/\s/g, ""));
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+async function ghFetch() {
+  const r = await fetch(`${ghURL()}?ref=${encodeURIComponent(gh.branch)}&_=${Date.now()}`, { headers: ghHead(), cache: "no-store" });
+  if (r.status === 404) return { missing: true };
+  if (r.status === 401) throw new Error("토큰이 거부됐습니다 (401)");
+  if (r.status === 403) throw new Error("권한이 없거나 호출 한도를 넘었습니다 (403)");
+  if (!r.ok) throw new Error("저장소를 읽지 못했습니다 (" + r.status + ")");
+  const j = await r.json();
+  return { sha: j.sha, data: JSON.parse(b64decode(j.content)) };
+}
+async function ghWrite(payload, message, sha) {
+  const body = { message, content: b64encode(JSON.stringify(payload, null, 2)), branch: gh.branch };
+  if (sha) body.sha = sha;
+  const r = await fetch(ghURL(), { method: "PUT", headers: Object.assign({ "Content-Type": "application/json" }, ghHead()), body: JSON.stringify(body) });
+  if (r.status === 409 || r.status === 422) { const e = new Error("충돌"); e.conflict = true; throw e; }
+  if (!r.ok) throw new Error("저장소에 쓰지 못했습니다 (" + r.status + ")");
+  const j = await r.json();
+  return j.content.sha;
+}
+
+/* ---------- 불러오기 ---------- */
+async function loadAll() {
+  loadGH();
+  let local = null;
+  const raw = LS.get(KEY);
+  if (raw) { try { local = normalize(JSON.parse(raw)); } catch (e) { toast("이 브라우저의 데이터를 읽지 못했습니다"); } }
+  if (!local && window.storage) {
+    // 예전 아티팩트판에서 쓰던 저장소가 있으면 옮겨온다.
+    for (const k of [KEY, OLD_KEY]) {
+      try {
+        const r = await window.storage.get(k);
+        if (r && r.value) { local = normalize(JSON.parse(r.value)); toast("이전 기록을 옮겨왔습니다"); break; }
+      } catch (e) { /* 없으면 다음 */ }
+    }
+  }
+  if (local) db = local;
+  storageOK = LS.set("music_probe", "1");
+  LS.del("music_probe");
+  setSave(statusText());
+  if (ghOn()) await pull(true);
+  maybeSnapshot();
+}
+
+/* ---------- 저장 ---------- */
+function save(immediate) {
+  db.updatedAt = now();
+  dirty = true;
+  if (!LS.set(KEY, JSON.stringify(db))) {
+    storageOK = false;
+    setSave("저장 실패 · 내보내기로 백업하세요");
+    return;
+  }
+  dirty = false;
+  storageOK = true;
+  if (!ghOn()) { setSave(statusText()); return; }
+  setSave("변경됨 · 곧 올림");
+  clearTimeout(pushT);
+  if (immediate) push(); else pushT = setTimeout(push, 4000);
+}
+
+/* ---------- 올리기 ---------- */
+async function push(retry) {
+  if (!ghOn() || syncing) return;
+  syncing = true;
+  setSave(statusText());
+  try {
+    const payload = Object.assign({}, db);
+    delete payload.settings_token;
+    const sha = await ghWrite(payload, `기록 갱신 · 앨범 ${db.albums.length} 곡 ${db.tracks.length}`, gh.sha);
+    gh.sha = sha; gh.lastSync = now(); saveGH();
+  } catch (e) {
+    if (e.conflict && !retry) {
+      syncing = false;
+      const ok = await resolveConflict();
+      if (ok === "push") return push(true);
+      return;
+    }
+    setSave("올리기 실패 · " + e.message);
+    syncing = false;
+    return;
+  }
+  syncing = false;
+  setSave(statusText());
+}
+
+/* ---------- 내려받기 ---------- */
+async function pull(quiet) {
+  if (!ghOn() || syncing) return;
+  syncing = true;
+  setSave("동기화 중…");
+  try {
+    const res = await ghFetch();
+    if (res.missing) {
+      syncing = false;
+      await push();
+      return;
+    }
+    gh.sha = res.sha;
+    const remote = normalize(res.data);
+    const rAt = res.data.updatedAt || 0, lAt = db.updatedAt || 0;
+    const empty = !db.albums.length && !db.tracks.length;
+    if (rAt > lAt || empty) {
+      if (!empty && !quiet) await maybeSnapshot(true);
+      db = remote;
+      LS.set(KEY, JSON.stringify(db));
+      gh.lastSync = now(); saveGH();
+      syncing = false;
+      setSave(statusText());
+      render();
+      if (ui.sheet) renderSheet();
+      if (!quiet) toast("다른 기기의 기록을 불러왔습니다");
+      return;
+    }
+    gh.lastSync = now(); saveGH();
+    syncing = false;
+    setSave(statusText());
+    if (lAt > rAt) push();
+    else if (!quiet) toast("이미 최신입니다");
+    return;
+  } catch (e) {
+    setSave("동기화 실패 · " + e.message);
+    syncing = false;
+    if (!quiet) toast(e.message);
+  }
+}
+async function resolveConflict() {
+  let res;
+  try { res = await ghFetch(); } catch (e) { toast("충돌을 확인하지 못했습니다"); return null; }
+  if (res.missing) { gh.sha = null; return "push"; }
+  gh.sha = res.sha;
+  const rAt = res.data.updatedAt || 0;
+  const when = rAt ? new Date(rAt).toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "알 수 없는 시각";
+  const keepMine = confirm(
+    `다른 기기에서 먼저 수정했습니다 (${when}).\n\n` +
+    `확인 = 지금 이 기기의 내용을 올리고 저쪽 변경을 덮어씁니다\n` +
+    `취소 = 저쪽 내용을 받아오고 이 기기의 최근 변경을 버립니다\n\n` +
+    `어느 쪽이든 되돌리기 전에 복구 지점을 만들어 둡니다.`);
+  await maybeSnapshot(true);
+  if (keepMine) return "push";
+  mark("원격 내용 받기");
+  db = normalize(res.data);
+  LS.set(KEY, JSON.stringify(db));
+  gh.lastSync = now(); saveGH();
+  setSave(statusText());
+  render();
+  if (ui.sheet) renderSheet();
+  toast("다른 기기의 내용으로 맞췄습니다");
+  return null;
+}
+
+/* --- 복구 지점: 6시간에 한 번씩 3개까지 순환 --- */
+async function maybeSnapshot(force) {
+  if (!db.albums.length && !db.tracks.length) return;
+  try {
+    const meta = JSON.parse(LS.get("snap_meta") || '{"i":0,"at":[]}');
+    const last = meta.at.length ? Math.max(...meta.at.map(x => x.at || 0)) : 0;
+    if (!force && now() - last < 6 * 3600 * 1000) return;
+    const slot = meta.i % SNAP_KEYS.length;
+    if (!LS.set(SNAP_KEYS[slot], JSON.stringify({ at: now(), db }))) return;
+    meta.at = meta.at.filter(x => x.slot !== slot);
+    meta.at.push({ slot, at: now(), albums: db.albums.length, tracks: db.tracks.length });
+    meta.i = (meta.i + 1) % SNAP_KEYS.length;
+    LS.set("snap_meta", JSON.stringify(meta));
+  } catch (e) { /* 조용히 넘어간다 */ }
+}
+
+/* --- 되돌리기 --- */
+const undoStack = [];
+function mark(label) {
+  undoStack.push({ label, data: JSON.stringify(db) });
+  if (undoStack.length > 25) undoStack.shift();
+}
+function undo() {
+  const u = undoStack.pop();
+  if (!u) return toast("되돌릴 작업이 없습니다");
+  db = normalize(JSON.parse(u.data));
+  save(); render();
+  if (ui.sheet) renderSheet();
+  toast("되돌렸습니다 · " + u.label);
+}
+
+/* ==================== 정규화 · 마이그레이션 ==================== */
+function normalize(d) {
+  const out = {
+    version: 2, albums: [], tracks: [], artists: [],
+    settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true }, (d && d.settings) || {})
+  };
+  const albums = Array.isArray(d) ? d : ((d && d.albums) || []);
+  for (const a of albums) {
+    const id = a.id || uid("a");
+    out.albums.push({
+      id, title: a.title || "제목 없음", artist: a.artist || "",
+      artistKey: akey(a.artist), year: String(a.year || ""), genre: a.genre || "",
+      cover: a.cover || a.coverUrl || "", appleId: a.appleId || null,
+      rating: isNum(a.rating) ? clamp(r1(a.rating)) : null,
+      review: a.review || "", added: a.added || now(),
+      ratedAt: a.ratedAt || (isNum(a.rating) ? (a.added || now()) : null)
+    });
+    // v1: 곡이 앨범 안에 중첩돼 있던 구조를 펼친다.
+    for (const [i, t] of (a.tracks || []).entries()) {
+      out.tracks.push(mkTrack(t, id, a.artist, i));
+    }
+  }
+  for (const t of (d && d.tracks) || []) {
+    const alb = out.albums.find(x => x.id === t.albumId);
+    out.tracks.push(mkTrack(t, t.albumId || null, t.artist || (alb ? alb.artist : ""), 0));
+  }
+  for (const ar of (d && d.artists) || []) {
+    if (!ar || !ar.name) continue;
+    out.artists.push({
+      id: ar.id || uid("r"), key: ar.key || akey(ar.name), name: ar.name,
+      rating: isNum(ar.rating) ? clamp(r1(ar.rating)) : null, note: ar.note || ""
+    });
+  }
+  return out;
+}
+function mkTrack(t, albumId, fallbackArtist, i) {
+  const artist = t.artist || fallbackArtist || "";
+  return {
+    id: t.id || uid("t"), albumId: albumId || null,
+    no: t.no || t.trackNo || i + 1, disc: t.disc || 1,
+    title: t.title || "제목 없음", artist, artistKey: akey(artist),
+    album: t.album || "", ms: t.ms || 0,
+    rating: isNum(t.rating) ? clamp(r1(t.rating)) : null,
+    review: t.review || t.note || "", added: t.added || now(),
+    ratedAt: t.ratedAt || (isNum(t.rating) ? (t.added || now()) : null)
+  };
+}
+
+/* ==================== 파생 조회 ==================== */
+const album = (id) => db.albums.find(a => a.id === id);
+const track = (id) => db.tracks.find(t => t.id === id);
+const albumTracks = (id) => db.tracks.filter(t => t.albumId === id).sort((a, b) => (a.disc - b.disc) || (a.no - b.no));
+const albumTitleOf = (t) => t.albumId ? ((album(t.albumId) || {}).title || t.album || "") : (t.album || "싱글");
+const coverOf = (t) => t.albumId ? ((album(t.albumId) || {}).cover || "") : "";
+function trackAvg(id) {
+  const v = albumTracks(id).map(t => t.rating).filter(isNum);
+  return v.length ? r1(mean(v)) : null;
+}
+function artistList() {
+  const map = new Map();
+  const touch = (name) => {
+    const k = akey(name);
+    if (!k) return null;
+    if (!map.has(k)) map.set(k, { key: k, name, albums: [], tracks: [] });
+    return map.get(k);
+  };
+  for (const a of db.albums) { const e = touch(a.artist); if (e) e.albums.push(a); }
+  for (const t of db.tracks) { const e = touch(t.artist || (album(t.albumId) || {}).artist); if (e) e.tracks.push(t); }
+  const out = [];
+  for (const e of map.values()) {
+    const ar = e.albums.map(a => a.rating).filter(isNum);
+    const tr = e.tracks.map(t => t.rating).filter(isNum);
+    const saved = db.artists.find(x => x.key === e.key);
+    out.push({
+      key: e.key, name: e.name, albums: e.albums, tracks: e.tracks,
+      albAvg: ar.length ? r1(mean(ar)) : null,
+      trkAvg: tr.length ? r1(mean(tr)) : null,
+      nRated: tr.length, own: saved ? saved.rating : null, note: saved ? saved.note : ""
+    });
+  }
+  return out;
+}
+function artistByKey(k) { return artistList().find(a => a.key === k); }
+function setArtistMeta(key, name, patch) {
+  let a = db.artists.find(x => x.key === key);
+  if (!a) { a = { id: uid("r"), key, name, rating: null, note: "" }; db.artists.push(a); }
+  Object.assign(a, patch);
+}
+
+/* ==================== 점수 컨트롤 ====================
+   알약 하나에 세 가지 조작을 겹쳐 둔다.
+   - 좌우 드래그 → 값 조절 (마우스·트랙패드·터치 동일)
+   - 짧게 탭     → 숫자 입력 + (곡이면) 아래 슬라이더 펼침
+   - 세로 스크롤은 touch-action:pan-y 로 살려 둔다.
+*/
+function scoreHTML(v, cls) {
+  const c = hue(v);
+  const w = isNum(v) ? (v / 10) * 100 : 0;
+  return `<span class="score ${isNum(v) ? "set" : ""} ${cls || ""}" style="color:${c}" tabindex="0" role="slider"
+    aria-valuemin="0" aria-valuemax="10" aria-valuenow="${isNum(v) ? v : ""}" aria-label="점수">
+    <span class="fill" style="width:${w}%"></span><span class="v">${isNum(v) ? fmt(v) : "–"}</span></span>`;
+}
+function paintScore(node, v) {
+  node.style.color = hue(v);
+  node.classList.toggle("set", isNum(v));
+  const f = $(".fill", node), t = $(".v", node);
+  if (f) f.style.width = (isNum(v) ? (v / 10) * 100 : 0) + "%";
+  if (t) t.textContent = isNum(v) ? fmt(v) : "–";
+  node.setAttribute("aria-valuenow", isNum(v) ? v : "");
+}
+/* get(): 현재 값, set(v, live): 값 반영. tap(): 짧게 눌렀을 때 */
+function bindScore(node, get, set, opts) {
+  opts = opts || {};
+  let dragging = false, moved = false, startX = 0, base = 0, pid = null;
+  const PX = 5; // 5px 당 0.1점
+  node.addEventListener("pointerdown", (e) => {
+    if (e.button != null && e.button !== 0) return;
+    if (e.target.tagName === "INPUT") return;
+    dragging = true; moved = false; startX = e.clientX; pid = e.pointerId;
+    base = isNum(get()) ? get() : 5;
+    node.setPointerCapture(pid);
+  });
+  node.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    if (!moved && Math.abs(dx) < 3) return;
+    if (!moved) { moved = true; node.classList.add("dragging"); }
+    e.preventDefault();
+    const v = clamp(r1(base + Math.round(dx / PX) / 10));
+    if (v !== get()) { set(v, true); paintScore(node, v); }
+  });
+  const end = () => {
+    if (!dragging) return;
+    dragging = false;
+    node.classList.remove("dragging");
+    if (pid !== null) { try { node.releasePointerCapture(pid); } catch (e) {} pid = null; }
+    if (moved) { set(get(), false); }
+    else if (opts.tap) opts.tap();
+  };
+  node.addEventListener("pointerup", end);
+  node.addEventListener("pointercancel", end);
+  node.addEventListener("keydown", (e) => {
+    const cur = isNum(get()) ? get() : 5;
+    let v = null;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") v = clamp(r1(cur + (e.shiftKey ? 1 : 0.1)));
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") v = clamp(r1(cur - (e.shiftKey ? 1 : 0.1)));
+    else if (e.key === "Backspace" || e.key === "Delete") { e.preventDefault(); set(null, false); paintScore(node, null); return; }
+    else if (e.key === "Enter" && opts.tap) { e.preventDefault(); opts.tap(); return; }
+    if (v === null) return;
+    e.preventDefault();
+    set(v, false); paintScore(node, v);
+  });
+}
+/* 알약 안에서 직접 숫자 입력 */
+function inlineNumber(node, get, set) {
+  if ($("input", node)) return;
+  const inp = document.createElement("input");
+  inp.type = "text"; inp.inputMode = "decimal";
+  inp.value = isNum(get()) ? fmt(get()) : "";
+  inp.style.color = hue(get());
+  node.appendChild(inp);
+  inp.focus(); inp.select();
+  const commit = () => {
+    const raw = inp.value.trim();
+    if (raw === "") set(null, false);
+    else {
+      const v = parseFloat(raw);
+      if (!isNaN(v)) set(clamp(r1(v)), false);
+    }
+    paintScore(node, get());
+    inp.remove();
+  };
+  inp.addEventListener("blur", commit);
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); inp.blur(); }
+    if (e.key === "Escape") { e.preventDefault(); inp.value = ""; inp.remove(); paintScore(node, get()); }
+  });
+}
+function paintRange(rng, v) {
+  const p = ((isNum(v) ? v : 0) / 10) * 100;
+  const c = isNum(v) ? hue(v) : "var(--field)";
+  rng.style.setProperty("--rt", `linear-gradient(to right, ${c} ${p}%, var(--field) ${p}%)`);
+}
+
+/* ==================== iTunes ==================== */
+function jsonp(url) {
+  return new Promise((res, rej) => {
+    const cb = "cb_" + Math.random().toString(36).slice(2);
+    const s = document.createElement("script");
+    const timer = setTimeout(() => { cleanup(); rej(new Error("timeout")); }, 9000);
+    function cleanup() { clearTimeout(timer); delete window[cb]; s.remove(); }
+    window[cb] = (d) => { cleanup(); res(d); };
+    s.onerror = () => { cleanup(); rej(new Error("network")); };
+    s.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cb;
+    document.head.appendChild(s);
+  });
+}
+async function apiGet(url) {
+  try {
+    const r = await fetch(url);
+    if (r.ok) return await r.json();
+  } catch (e) { /* CORS면 JSONP로 */ }
+  return await jsonp(url);
+}
+const big = (u) => u ? u.replace(/\/\d+x\d+bb\.(jpg|png)/, "/600x600bb.$1") : "";
+
+async function searchAlbums(term, country) {
+  const d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=album&limit=24&country=${country}`);
+  return (d.results || []).map(r => ({
+    appleId: r.collectionId, title: r.collectionName, artist: r.artistName,
+    year: (r.releaseDate || "").slice(0, 4), genre: r.primaryGenreName || "",
+    cover: big(r.artworkUrl100), n: r.trackCount
+  }));
+}
+async function searchSongs(term, country) {
+  const d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=24&country=${country}`);
+  return (d.results || []).map(r => ({
+    kind: "song", appleId: r.trackId, collectionId: r.collectionId,
+    title: r.trackName, artist: r.artistName, album: r.collectionName || "",
+    year: (r.releaseDate || "").slice(0, 4), genre: r.primaryGenreName || "",
+    cover: big(r.artworkUrl100), ms: r.trackTimeMillis || 0, no: r.trackNumber || 1, disc: r.discNumber || 1
+  }));
+}
+async function fetchTracks(appleId, country) {
+  // lookup 의 limit 상한은 200. 스토어가 안 맞으면 빈 결과가 오므로 국가를 빼고 다시 시도한다.
+  const urls = [
+    `https://itunes.apple.com/lookup?id=${appleId}&entity=song&limit=200&country=${country}`,
+    `https://itunes.apple.com/lookup?id=${appleId}&entity=song&limit=200`,
+    `https://itunes.apple.com/lookup?id=${appleId}&entity=song`
+  ];
+  let last = null;
+  for (const u of urls) {
+    let d;
+    try { d = await apiGet(u); } catch (e) { last = e; continue; }
+    const ts = (d.results || [])
+      .filter(r => r.wrapperType === "track" && r.kind !== "music-video")
+      .sort((a, b) => ((a.discNumber || 1) - (b.discNumber || 1)) || ((a.trackNumber || 0) - (b.trackNumber || 0)))
+      .map((r, i) => ({ no: r.trackNumber || i + 1, disc: r.discNumber || 1, title: r.trackName || "제목 없음", ms: r.trackTimeMillis || 0 }));
+    if (ts.length) return ts;
+  }
+  if (last) throw last;
+  return [];
+}
+
+/* ==================== Claude 경유 조회 ====================
+   아티팩트 안에서는 CSP가 itunes.apple.com 연결을 막는다.
+   열려 있는 건 api.anthropic.com 뿐이라 그쪽으로 우회한다.
+   사용량이 차감되므로 자동으로 부르지 않고 버튼을 눌렀을 때만 나간다. */
+let itunesBlocked = false;
+
+async function claudeJSON(prompt) {
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: prompt }],
+      tools: [{ type: "web_search_20250305", name: "web_search" }]
+    })
+  });
+  if (!r.ok) throw new Error("응답 코드 " + r.status);
+  const d = await r.json();
+  const text = (d.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+  const clean = text.replace(/```json/g, "").replace(/```/g, "").trim();
+  const m = clean.match(/[\[{][\s\S]*[\]}]/);
+  const parsed = JSON.parse(m ? m[0] : clean);
+  return parsed;
+}
+async function claudeSearchAlbums(term) {
+  const out = await claudeJSON(
+    `음악 앨범을 찾습니다: "${term}"\n` +
+    `가장 잘 맞는 앨범을 최대 5개 골라 JSON 배열로만 답하세요.\n` +
+    `각 원소: {"title":"앨범명","artist":"아티스트","year":"발매연도 4자리","genre":"장르","cover":"앨범 커버 이미지 URL"}\n` +
+    `cover는 실제로 존재하는 이미지 주소만 넣고, 확실하지 않으면 빈 문자열로 두세요.\n` +
+    `설명이나 마크다운 없이 JSON 배열만 출력하세요.`);
+  return (Array.isArray(out) ? out : []).map(r => ({
+    via: "claude", appleId: null, title: r.title || "", artist: r.artist || "",
+    year: String(r.year || "").slice(0, 4), genre: r.genre || "", cover: r.cover || "", n: 0
+  })).filter(r => r.title);
+}
+async function claudeSearchSongs(term) {
+  const out = await claudeJSON(
+    `음악 곡을 찾습니다: "${term}"\n` +
+    `가장 잘 맞는 곡을 최대 5개 골라 JSON 배열로만 답하세요.\n` +
+    `각 원소: {"title":"곡명","artist":"아티스트","album":"수록 앨범명","year":"발매연도 4자리","cover":"앨범 커버 이미지 URL"}\n` +
+    `cover가 확실하지 않으면 빈 문자열로 두세요. 설명 없이 JSON 배열만 출력하세요.`);
+  return (Array.isArray(out) ? out : []).map(r => ({
+    via: "claude", kind: "song", appleId: null, title: r.title || "", artist: r.artist || "",
+    album: r.album || "", year: String(r.year || "").slice(0, 4), cover: r.cover || "", ms: 0, no: 1, disc: 1
+  })).filter(r => r.title);
+}
+async function claudeTracks(title, artist) {
+  const out = await claudeJSON(
+    `앨범 "${title}"${artist ? ` (아티스트: ${artist})` : ""}의 정규 수록곡 목록을 알려주세요.\n` +
+    `JSON 배열로만, 각 원소는 {"no":트랙번호, "title":"곡명"} 형식입니다.\n` +
+    `보너스 트랙이나 디럭스판 추가곡은 원반에 포함된 경우에만 넣고, 트랙 순서대로 정렬하세요.\n` +
+    `설명 없이 JSON 배열만 출력하세요.`);
+  return (Array.isArray(out) ? out : []).map((t, i) => ({
+    no: t.no || i + 1, disc: 1, title: t.title || "", ms: 0
+  })).filter(t => t.title);
+}
+
+/* ==================== 테마 ==================== */
+const mq = window.matchMedia("(prefers-color-scheme: dark)");
+function applyTheme() {
+  const t = db.settings.theme;
+  const dark = t === "dark" || (t === "auto" && mq.matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  $$("#themeSeg button").forEach(b => b.classList.toggle("on", b.dataset.theme === t));
+  document.body.classList.toggle("glass", !!db.settings.glass);
+  document.body.classList.toggle("noglass", !db.settings.glass);
+  $("#glassLabel").textContent = db.settings.glass ? "유리 효과 끄기" : "유리 효과 켜기";
+  $$("#ctrySeg button").forEach(b => b.classList.toggle("on", b.dataset.c === db.settings.country));
+}
+mq.addEventListener("change", () => { if (db.settings.theme === "auto") { applyTheme(); render(); if (ui.sheet) renderSheet(); } });
+
+/* 커버에서 대표색을 뽑아 배경에 은은하게 깐다. CORS로 막히면 조용히 포기. */
+function tintFrom(url) {
+  if (!db.settings.glass) return;
+  if (!url) { document.body.style.setProperty("--tint", "transparent"); return; }
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = 12;
+      const g = c.getContext("2d");
+      g.drawImage(img, 0, 0, 12, 12);
+      const d = g.getImageData(0, 0, 12, 12).data;
+      let r = 0, gr = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { r += d[i]; gr += d[i + 1]; b += d[i + 2]; n++; }
+      r = Math.round(r / n); gr = Math.round(gr / n); b = Math.round(b / n);
+      document.body.style.setProperty("--tint",
+        `radial-gradient(60% 60% at 50% 0%, rgb(${r} ${gr} ${b}) 0%, transparent 72%)`);
+    } catch (e) { /* 캔버스가 오염되면 그만둔다 */ }
+  };
+  img.onerror = () => {};
+  img.src = url;
+}
+
+/* ==================== 화면 ==================== */
+function render() {
+  $$("#topSeg button").forEach(b => b.classList.toggle("on", b.dataset.view === ui.view));
+  $$(".tabbar button").forEach(b => b.classList.toggle("on", b.dataset.view === ui.view));
+  if (ui.view === "albums") renderAlbums();
+  else if (ui.view === "tracks") renderTracks();
+  else if (ui.view === "artists") renderArtists();
+  else renderStats();
+}
+const hit = (s, q) => String(s || "").toLowerCase().includes(q);
+
+/* ---------- 앨범 ---------- */
+function albumsVisible() {
+  const q = ui.q.trim().toLowerCase();
+  let list = db.albums.filter(a => {
+    if (ui.albFilter === "rated" && !isNum(a.rating)) return false;
+    if (ui.albFilter === "unrated" && isNum(a.rating)) return false;
+    if (!q) return true;
+    return hit(a.title, q) || hit(a.artist, q) || hit(a.genre, q) || hit(a.year, q);
+  });
+  const s = ui.albSort;
+  list.sort((a, b) => {
+    if (s === "rating") return (isNum(b.rating) ? b.rating : -1) - (isNum(a.rating) ? a.rating : -1);
+    if (s === "title") return a.title.localeCompare(b.title, "ko");
+    if (s === "artist") return (a.artist || "").localeCompare(b.artist || "", "ko") || a.title.localeCompare(b.title, "ko");
+    if (s === "year") return String(b.year || "").localeCompare(String(a.year || ""));
+    return (b.added || 0) - (a.added || 0);
+  });
+  return list;
+}
+function artHTML(a) {
+  if (a.cover) return `<img src="${esc(a.cover)}" alt="" loading="lazy" data-t="${esc(a.title)}" data-a="${esc(a.artist)}" onerror="coverFail(this)">`;
+  return `<div class="ph" style="background:${fauxCover(a.title, a.artist)}">${esc(a.title)}</div>`;
+}
+/* 커버 주소가 죽었을 때 앨범명으로 만든 그라데이션으로 갈아끼운다. */
+function coverFail(img) {
+  const t = img.dataset.t || "", a = img.dataset.a || "";
+  const d = document.createElement("div");
+  d.className = "ph";
+  d.style.background = fauxCover(t, a);
+  d.textContent = t;
+  img.replaceWith(d);
+}
+function renderAlbums() {
+  const list = albumsVisible();
+  el.wrap.innerHTML = `
+    <div class="toolbar">
+      <div class="seg sm" id="albFilter">
+        <button data-f="all">전체</button><button data-f="rated">평가함</button><button data-f="unrated">미평가</button>
+      </div>
+      <select class="sel" id="albSort">
+        <option value="added">추가한 순</option><option value="rating">점수 높은 순</option>
+        <option value="title">앨범명</option><option value="artist">아티스트</option><option value="year">최신 발매순</option>
+      </select>
+      <span class="count">${list.length}장${db.albums.length !== list.length ? ` / ${db.albums.length}장` : ""}</span>
+    </div>
+    ${list.length ? `<div class="grid" id="grid">${list.map(a => `
+      <button class="card" data-id="${a.id}">
+        <div class="art">${artHTML(a)}
+          <span class="badge ${isNum(a.rating) ? "" : "none"}">${isNum(a.rating) ? fmt(a.rating) : "–"}</span>
+        </div>
+        <div class="meta"><div class="t">${esc(a.title)}</div><div class="a">${esc(a.artist)}</div></div>
+      </button>`).join("")}</div>`
+      : emptyHTML(db.albums.length ? "조건에 맞는 앨범이 없습니다" : "첫 앨범을 추가해 보세요",
+                  db.albums.length ? "검색어나 필터를 바꿔 보세요." : "앨범명이나 아티스트로 검색하면 커버와 수록곡까지 같이 들어옵니다.")}`;
+  $$("#albFilter button").forEach(b => {
+    b.classList.toggle("on", b.dataset.f === ui.albFilter);
+    b.onclick = () => { ui.albFilter = b.dataset.f; renderAlbums(); };
+  });
+  const ss = $("#albSort");
+  ss.value = ui.albSort;
+  ss.onchange = () => { ui.albSort = ss.value; renderAlbums(); };
+  $$("#grid .card").forEach(c => c.onclick = () => openSheet("album", c.dataset.id));
+}
+function emptyHTML(h, p) {
+  return `<div class="empty"><h2>${esc(h)}</h2><p>${esc(p)}</p>
+    <button class="btn primary" onclick="openAdd()">앨범 추가</button></div>`;
+}
+
+/* ---------- 곡 ---------- */
+function tracksVisible() {
+  const q = ui.q.trim().toLowerCase();
+  let list = db.tracks.filter(t => {
+    if (ui.trkFilter === "rated" && !isNum(t.rating)) return false;
+    if (ui.trkFilter === "unrated" && isNum(t.rating)) return false;
+    if (!q) return true;
+    return hit(t.title, q) || hit(t.artist, q) || hit(albumTitleOf(t), q);
+  });
+  const s = ui.trkSort;
+  list.sort((a, b) => {
+    if (s === "rating") return (isNum(b.rating) ? b.rating : -1) - (isNum(a.rating) ? a.rating : -1) || a.title.localeCompare(b.title, "ko");
+    if (s === "title") return a.title.localeCompare(b.title, "ko");
+    if (s === "artist") return (a.artist || "").localeCompare(b.artist || "", "ko") || a.title.localeCompare(b.title, "ko");
+    if (s === "album") return albumTitleOf(a).localeCompare(albumTitleOf(b), "ko") || (a.disc - b.disc) || (a.no - b.no);
+    if (s === "recent") return (b.ratedAt || b.added || 0) - (a.ratedAt || a.added || 0);
+    return (b.added || 0) - (a.added || 0);
+  });
+  return list;
+}
+function renderTracks() {
+  const list = tracksVisible();
+  const rated = db.tracks.filter(t => isNum(t.rating)).length;
+  el.wrap.innerHTML = `
+    <div class="toolbar">
+      <div class="seg sm" id="trkFilter">
+        <button data-f="all">전체</button><button data-f="rated">평가함</button><button data-f="unrated">미평가</button>
+      </div>
+      <select class="sel" id="trkSort">
+        <option value="rating">점수 높은 순</option><option value="recent">최근 평가순</option>
+        <option value="added">추가한 순</option><option value="title">곡명</option>
+        <option value="artist">아티스트</option><option value="album">앨범</option>
+      </select>
+      <button class="btn" id="pickRandom">아무 곡이나 하나</button>
+      <span class="count">${list.length}곡 · 평가 ${rated}곡</span>
+    </div>
+    ${list.length ? `
+    <div class="thead">
+      <span class="h-idx"></span><span>곡</span><span class="h-sub">앨범</span><span class="h-dur" style="text-align:right">길이</span><span style="text-align:center">점수</span>
+    </div>
+    <div id="tlist">${list.slice(0, 600).map((t, i) => trackRowHTML(t, i)).join("")}</div>
+    ${list.length > 600 ? `<p class="hint" style="text-align:center;padding:18px">앞 600곡만 보여줍니다. 검색이나 필터로 좁혀 보세요.</p>` : ""}`
+    : emptyHTML(db.tracks.length ? "조건에 맞는 곡이 없습니다" : "아직 곡이 없습니다",
+                db.tracks.length ? "필터를 바꿔 보세요." : "앨범을 추가하면 수록곡이 함께 들어옵니다.")}`;
+  $$("#trkFilter button").forEach(b => {
+    b.classList.toggle("on", b.dataset.f === ui.trkFilter);
+    b.onclick = () => { ui.trkFilter = b.dataset.f; renderTracks(); };
+  });
+  const ss = $("#trkSort");
+  ss.value = ui.trkSort;
+  ss.onchange = () => { ui.trkSort = ss.value; renderTracks(); };
+  const rnd = $("#pickRandom");
+  if (rnd) rnd.onclick = () => {
+    const pool = db.tracks.filter(t => !isNum(t.rating));
+    if (!pool.length) return toast("평가하지 않은 곡이 없습니다");
+    openSheet("track", pool[Math.floor(Math.random() * pool.length)].id);
+  };
+  $$("#tlist .lrow").forEach(row => {
+    const t = track(row.dataset.id);
+    if (!t) return;
+    $(".tt", row).onclick = () => openSheet("track", t.id);
+    const mini = $(".mini", row);
+    if (mini) mini.onclick = () => t.albumId && openSheet("album", t.albumId);
+    const sc = $(".score", row);
+    bindScore(sc,
+      () => t.rating,
+      (v) => rateTrack(t, v),
+      { tap: () => inlineNumber(sc, () => t.rating, (v) => { rateTrack(t, v); paintScore(sc, t.rating); }) });
+  });
+}
+function trackRowHTML(t, i) {
+  const cov = coverOf(t);
+  const alb = albumTitleOf(t);
+  return `<div class="lrow" data-id="${t.id}">
+    <span class="idx">${i + 1}</span>
+    <span class="main">
+      ${cov ? `<img class="mini" src="${esc(cov)}" alt="" loading="lazy">` : `<span class="mini" style="background:${fauxCover(alb, t.artist)}"></span>`}
+      <span style="min-width:0">
+        <span class="tt" style="display:block">${esc(t.title)}</span>
+        <span class="sub2">${esc(t.artist)}${alb ? " · " + esc(alb) : ""}</span>
+      </span>
+    </span>
+    <span class="sub">${esc(t.artist)}${alb ? " <b>·</b> " + esc(alb) : ""}</span>
+    <span class="dur">${dur(t.ms)}</span>
+    <span style="text-align:center">${scoreHTML(t.rating)}</span>
+  </div>`;
+}
+function rateTrack(t, v) {
+  t.rating = v;
+  if (isNum(v)) t.ratedAt = now();
+  save();
+}
+
+/* ---------- 아티스트 ---------- */
+function renderArtists() {
+  const q = ui.q.trim().toLowerCase();
+  let list = artistList().filter(a => !q || hit(a.name, q));
+  list.sort((a, b) => {
+    if (ui.artSort === "name") return a.name.localeCompare(b.name, "ko");
+    if (ui.artSort === "count") return (b.albums.length + b.tracks.length) - (a.albums.length + a.tracks.length);
+    const av = isNum(a.own) ? a.own : (a.trkAvg ?? a.albAvg ?? -1);
+    const bv = isNum(b.own) ? b.own : (b.trkAvg ?? b.albAvg ?? -1);
+    return bv - av;
+  });
+  el.wrap.innerHTML = `
+    <div class="toolbar">
+      <select class="sel" id="artSort">
+        <option value="score">점수 높은 순</option><option value="count">기록 많은 순</option><option value="name">이름순</option>
+      </select>
+      <button class="btn" id="cmpBtn">아티스트 비교</button>
+      <span class="count">${list.length}명</span>
+    </div>
+    ${list.length ? `<div class="agrid" id="agrid">${list.map(a => acardHTML(a)).join("")}</div>`
+      : emptyHTML("아직 아티스트가 없습니다", "앨범이나 곡을 추가하면 아티스트가 자동으로 모입니다.")}`;
+  const ss = $("#artSort");
+  ss.value = ui.artSort;
+  ss.onchange = () => { ui.artSort = ss.value; renderArtists(); };
+  $("#cmpBtn").onclick = openCompare;
+  $$("#agrid .acard").forEach(c => c.onclick = () => openSheet("artist", c.dataset.key));
+}
+function acardHTML(a) {
+  const covers = a.albums.filter(x => x.cover).slice(0, 4).map(x => x.cover);
+  const score = isNum(a.own) ? a.own : (a.trkAvg ?? a.albAvg);
+  return `<button class="acard" data-key="${esc(a.key)}">
+    ${mosaicHTML(covers, a.name)}
+    <span style="min-width:0;flex:1">
+      <span class="nm" style="display:block">${esc(a.name)}</span>
+      <span class="st">앨범 ${a.albums.length} · 곡 ${a.tracks.length}${a.nRated ? ` · 평가 ${a.nRated}` : ""}</span>
+    </span>
+    <span class="score set" style="color:${hue(score)};pointer-events:none">
+      <span class="fill" style="width:${isNum(score) ? score * 10 : 0}%"></span>
+      <span class="v">${isNum(score) ? fmt(score) : "–"}</span></span>
+  </button>`;
+}
+function mosaicHTML(covers, name, style) {
+  const st = style ? ` style="${style}"` : "";
+  if (!covers.length) return `<span class="mosaic one"${st}><span class="ph" style="background:${fauxCover(name, "")}">${esc(name.slice(0, 1))}</span></span>`;
+  if (covers.length < 4) return `<span class="mosaic one"${st}><img src="${esc(covers[0])}" alt="" loading="lazy"></span>`;
+  return `<span class="mosaic"${st}>${covers.map(c => `<img src="${esc(c)}" alt="" loading="lazy">`).join("")}</span>`;
+}
+
+/* ==================== 시트 ==================== */
+function openSheet(kind, id) {
+  ui.sheet = { kind, id };
+  ui.openTrack = null;
+  el.sheet.classList.add("show");
+  el.scrim.classList.add("show");
+  el.sheet.scrollTop = 0;
+  renderSheet();
+}
+function closeSheet() {
+  ui.sheet = null;
+  el.sheet.classList.remove("show");
+  el.scrim.classList.remove("show");
+  document.body.style.setProperty("--tint", "transparent");
+}
+function renderSheet() {
+  if (!ui.sheet) return;
+  if (ui.sheet.kind === "album") renderAlbumSheet();
+  else if (ui.sheet.kind === "track") renderTrackSheet();
+  else renderArtistSheet();
+}
+
+/* ---------- 앨범 시트 ---------- */
+function renderAlbumSheet() {
+  const a = album(ui.sheet.id);
+  if (!a) return closeSheet();
+  const ts = albumTracks(a.id);
+  const tavg = trackAvg(a.id);
+  tintFrom(a.cover);
+  el.sheetBody.innerHTML = `
+    <div class="hero">
+      ${a.cover ? `<img class="wash" src="${esc(a.cover)}" alt="">` : ""}
+      <div class="hero-row">
+        <div class="hero-art">${artHTML(a)}</div>
+        <div style="min-width:0">
+          <h1>${esc(a.title)}</h1>
+          <div class="who" id="toArtist">${esc(a.artist)}</div>
+          <div class="facts">${[a.year, a.genre, ts.length ? ts.length + "곡" : ""].filter(Boolean).map(esc).join(" · ")}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>앨범 점수</h3>
+      <div class="raterow">
+        <span class="bigscore" id="bigVal" style="color:${hue(a.rating)}" tabindex="0">${isNum(a.rating) ? fmt(a.rating) : "–"}<span class="of">/10</span></span>
+        <div class="rangewrap"><input type="range" id="rng" min="0" max="10" step="0.1" value="${a.rating ?? 0}"></div>
+        <input class="numin" id="numVal" inputmode="decimal" value="${isNum(a.rating) ? fmt(a.rating) : ""}" placeholder="–">
+      </div>
+      <div class="rate-actions">
+        ${tavg !== null ? `<button class="btn" id="useAvg">곡 평균 ${fmt(tavg)} 적용</button>` : ""}
+        <button class="btn ghost" id="clearRate">지우기</button>
+        <span class="hint">숫자를 좌우로 끌거나 슬라이더로 · 0.1점 단위</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>앨범 평</h3>
+      <textarea class="review" id="albRev" placeholder="이 앨범을 어떻게 들었는지 적어두세요.">${esc(a.review)}</textarea>
+    </div>
+
+    <div class="sec">
+      <h3>수록곡${ts.length ? ` · ${ts.filter(t => isNum(t.rating)).length}/${ts.length} 평가함` : ""}</h3>
+      <div class="tracks" id="tracks">${ts.length ? ts.map(t => albTrackHTML(t)).join("")
+        : `<p class="hint" style="padding:4px 0 10px">등록된 곡이 없습니다.</p>`}</div>
+      <div class="rate-actions" style="margin-top:14px">
+        <button class="btn" id="addTrack">곡 직접 추가</button>
+        <button class="btn" id="refetch">수록곡 다시 가져오기</button>
+        <span class="hint" id="tHint"></span>
+      </div>
+    </div>
+
+    <div class="sec" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn" id="editMeta">앨범 정보 수정</button>
+      <button class="btn ghost del" id="delAlbum" style="margin-left:auto">앨범 삭제</button>
+    </div>`;
+
+  const rng = $("#rng"), num = $("#numVal"), bigv = $("#bigVal");
+  paintRange(rng, a.rating);
+  const applyAlbum = (v, from) => {
+    a.rating = v;
+    if (isNum(v)) a.ratedAt = now();
+    bigv.innerHTML = (isNum(v) ? fmt(v) : "–") + `<span class="of">/10</span>`;
+    bigv.style.color = hue(v);
+    if (from !== "rng") rng.value = isNum(v) ? v : 0;
+    if (from !== "num") num.value = isNum(v) ? fmt(v) : "";
+    paintRange(rng, v);
+    save();
+  };
+  rng.addEventListener("input", () => applyAlbum(r1(+rng.value), "rng"));
+  num.addEventListener("input", () => {
+    const raw = num.value.trim();
+    if (raw === "") return applyAlbum(null, "num");
+    const v = parseFloat(raw);
+    if (!isNaN(v)) applyAlbum(clamp(r1(v)), "num");
+  });
+  num.addEventListener("blur", () => { num.value = isNum(a.rating) ? fmt(a.rating) : ""; });
+  bindScore(bigv, () => a.rating, (v) => applyAlbum(v, "big"));
+  $("#clearRate").onclick = () => applyAlbum(null);
+  if ($("#useAvg")) $("#useAvg").onclick = () => applyAlbum(trackAvg(a.id));
+  $("#albRev").addEventListener("input", (e) => { a.review = e.target.value; save(); });
+  $("#toArtist").onclick = () => { if (akey(a.artist)) openSheet("artist", akey(a.artist)); };
+
+  $("#addTrack").onclick = () => {
+    const name = prompt("곡 제목");
+    if (!name) return;
+    mark("곡 추가");
+    db.tracks.push(mkTrack({ title: name, no: albumTracks(a.id).length + 1 }, a.id, a.artist, 0));
+    save(); renderSheet();
+  };
+  $("#refetch").onclick = () => refetchTracks(a);
+  $("#editMeta").onclick = () => openManual(a);
+  $("#delAlbum").onclick = () => {
+    if (!confirm(`"${a.title}"과(와) 수록곡 기록을 삭제할까요?\n\n삭제한 뒤에도 Ctrl+Z(맥은 ⌘Z)로 되돌릴 수 있습니다.`)) return;
+    mark("앨범 삭제");
+    db.albums = db.albums.filter(x => x.id !== a.id);
+    db.tracks = db.tracks.filter(t => t.albumId !== a.id);
+    save(); closeSheet(); render(); toast("삭제했습니다 · Ctrl+Z로 되돌리기");
+  };
+  bindAlbumTracks(a);
+}
+function albTrackHTML(t) {
+  const open = ui.openTrack === t.id;
+  return `<div class="trow ${open ? "open" : ""}" data-id="${t.id}">
+      <span class="no">${t.no}</span>
+      <span class="tt">${esc(t.title)}</span>
+      <span class="dur">${dur(t.ms)}</span>
+      ${scoreHTML(t.rating)}
+    </div>
+    ${open ? `<div class="tedit" data-for="${t.id}">
+      <div class="line">
+        <div class="rangewrap"><input type="range" class="trng" min="0" max="10" step="0.1" value="${t.rating ?? 0}"></div>
+        <button class="btn ghost tclear">지우기</button>
+      </div>
+      <div class="line"><input class="note" placeholder="이 곡에 대한 메모" value="${esc(t.review)}"></div>
+      <div class="marks">${[6, 7, 7.5, 8, 8.5, 9, 9.5, 10].map(v => `<button class="mark" data-v="${v}">${fmt(v)}</button>`).join("")}
+        <button class="mark topage">곡 페이지 열기</button></div>
+    </div>` : ""}`;
+}
+function bindAlbumTracks(a) {
+  $$("#tracks .trow").forEach(row => {
+    const t = track(row.dataset.id);
+    if (!t) return;
+    const sc = $(".score", row);
+    bindScore(sc, () => t.rating, (v) => { rateTrack(t, v); syncAvgBtn(a); },
+      { tap: () => { ui.openTrack = ui.openTrack === t.id ? null : t.id; renderSheet(); } });
+    $(".tt", row).onclick = () => { ui.openTrack = ui.openTrack === t.id ? null : t.id; renderSheet(); };
+  });
+  const box = $(`.tedit[data-for="${ui.openTrack}"]`);
+  if (!box) return;
+  const t = track(ui.openTrack);
+  if (!t) return;
+  const rng = $(".trng", box), sc = $(`.trow[data-id="${t.id}"] .score`);
+  paintRange(rng, t.rating);
+  const set = (v) => { rateTrack(t, v); paintRange(rng, v); if (sc) paintScore(sc, v); syncAvgBtn(a); };
+  rng.addEventListener("input", () => set(r1(+rng.value)));
+  $(".tclear", box).onclick = () => { set(null); rng.value = 0; };
+  $(".note", box).addEventListener("input", (e) => { t.review = e.target.value; save(); });
+  $$(".mark[data-v]", box).forEach(b => b.onclick = () => { set(parseFloat(b.dataset.v)); rng.value = b.dataset.v; });
+  $(".topage", box).onclick = () => openSheet("track", t.id);
+}
+function syncAvgBtn(a) {
+  const btn = $("#useAvg"), av = trackAvg(a.id);
+  if (btn && av !== null) btn.textContent = `곡 평균 ${fmt(av)} 적용`;
+}
+async function refetchTracks(a) {
+  const hint = $("#tHint");
+  if (hint) hint.innerHTML = `<span class="spin"></span> 가져오는 중…`;
+  try {
+    let id = a.appleId;
+    if (!id) {
+      const hits = await searchAlbums((a.artist ? a.artist + " " : "") + a.title, db.settings.country);
+      if (!hits.length) { if (hint) hint.textContent = "이 앨범을 찾지 못했습니다"; return; }
+      id = hits[0].appleId; a.appleId = id;
+      if (!a.cover) a.cover = hits[0].cover;
+    }
+    const ts = await fetchTracks(id, db.settings.country);
+    if (!ts.length) { if (hint) hint.textContent = "수록곡 정보가 없습니다"; return; }
+    mergeTracks(a, ts);
+    toast(`수록곡 ${ts.length}곡을 불러왔습니다`);
+  } catch (e) {
+    const h = $("#tHint");
+    if (!h) return;
+    h.innerHTML = `애플 음악 조회가 막혀 있습니다. <button class="btn" id="tViaClaude" style="margin-left:6px">Claude로 가져오기</button>`;
+    $("#tViaClaude").onclick = async () => {
+      $("#tHint").innerHTML = `<span class="spin"></span> Claude가 찾는 중…`;
+      try {
+        const ts = await claudeTracks(a.title, a.artist);
+        if (!ts.length) { $("#tHint").textContent = "수록곡을 찾지 못했습니다"; return; }
+        mergeTracks(a, ts);
+        toast(`수록곡 ${ts.length}곡을 불러왔습니다`);
+      } catch (err) {
+        $("#tHint").textContent = "Claude 조회도 실패했습니다: " + err.message;
+      }
+    };
+  }
+}
+/* 이미 매긴 점수와 메모는 곡 제목으로 맞춰서 그대로 살린다. */
+function mergeTracks(a, ts) {
+  mark("수록곡 갱신");
+  const keep = new Map(albumTracks(a.id).map(t => [akey(t.title), t]));
+  db.tracks = db.tracks.filter(t => t.albumId !== a.id);
+  for (const [i, t] of ts.entries()) {
+    const prev = keep.get(akey(t.title));
+    const nt = mkTrack(t, a.id, a.artist, i);
+    if (prev) { nt.id = prev.id; nt.rating = prev.rating; nt.review = prev.review; nt.ratedAt = prev.ratedAt; nt.added = prev.added; nt.ms = nt.ms || prev.ms; }
+    db.tracks.push(nt);
+  }
+  save(); render(); renderSheet();
+}
+
+/* ---------- 곡 시트 ---------- */
+function renderTrackSheet() {
+  const t = track(ui.sheet.id);
+  if (!t) return closeSheet();
+  const a = t.albumId ? album(t.albumId) : null;
+  const cov = a ? a.cover : "";
+  tintFrom(cov);
+  const sibs = a ? albumTracks(a.id) : [];
+  const sameArtist = db.tracks.filter(x => x.artistKey === t.artistKey && isNum(x.rating) && x.id !== t.id)
+    .sort((x, y) => y.rating - x.rating);
+  const rank = sameArtist.filter(x => x.rating > (t.rating ?? -1)).length + 1;
+  el.sheetBody.innerHTML = `
+    <div class="hero">
+      ${cov ? `<img class="wash" src="${esc(cov)}" alt="">` : ""}
+      <div class="hero-row">
+        <div class="hero-art" style="${cov ? "" : `background:${fauxCover(t.title, t.artist)}`}">${cov ? `<img src="${esc(cov)}" alt="">` : ""}</div>
+        <div style="min-width:0">
+          <h1>${esc(t.title)}</h1>
+          <div class="who" id="toArtist">${esc(t.artist)}</div>
+          <div class="facts">${[a ? a.title : (t.album || "싱글"), dur(t.ms), a && a.year ? a.year : ""].filter(Boolean).map(esc).join(" · ")}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>곡 점수</h3>
+      <div class="raterow">
+        <span class="bigscore" id="bigVal" style="color:${hue(t.rating)}" tabindex="0">${isNum(t.rating) ? fmt(t.rating) : "–"}<span class="of">/10</span></span>
+        <div class="rangewrap"><input type="range" id="rng" min="0" max="10" step="0.1" value="${t.rating ?? 0}"></div>
+        <input class="numin" id="numVal" inputmode="decimal" value="${isNum(t.rating) ? fmt(t.rating) : ""}" placeholder="–">
+      </div>
+      <div class="rate-actions">
+        <button class="btn ghost" id="clearRate">지우기</button>
+        ${isNum(t.rating) && sameArtist.length ? `<span class="hint">${esc(t.artist)} 곡 중 ${rank}위 / ${sameArtist.length + 1}곡</span>` : `<span class="hint">0.1점 단위</span>`}
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>곡 메모</h3>
+      <textarea class="review" id="trkRev" placeholder="이 곡에 대해 남길 말">${esc(t.review)}</textarea>
+    </div>
+
+    ${a ? `<div class="sec">
+      <h3>같은 앨범 · ${esc(a.title)}</h3>
+      <div class="tracks">${sibs.map(s => `<div class="lrow" data-id="${s.id}" style="grid-template-columns:26px 1fr auto">
+        <span class="idx">${s.no}</span>
+        <span class="tt" style="${s.id === t.id ? "font-weight:640" : ""}">${esc(s.title)}</span>
+        <span class="score ${isNum(s.rating) ? "set" : ""}" style="color:${hue(s.rating)};pointer-events:none">
+          <span class="fill" style="width:${isNum(s.rating) ? s.rating * 10 : 0}%"></span><span class="v">${isNum(s.rating) ? fmt(s.rating) : "–"}</span></span>
+      </div>`).join("")}</div>
+      <div class="rate-actions" style="margin-top:12px"><button class="btn" id="toAlbum">앨범 페이지 열기</button></div>
+    </div>` : ""}
+
+    <div class="sec" style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="renameTrack">곡 정보 수정</button>
+      <button class="btn ghost del" id="delTrack" style="margin-left:auto">곡 삭제</button>
+    </div>`;
+
+  const rng = $("#rng"), num = $("#numVal"), bigv = $("#bigVal");
+  paintRange(rng, t.rating);
+  const apply = (v, from) => {
+    rateTrack(t, v);
+    bigv.innerHTML = (isNum(v) ? fmt(v) : "–") + `<span class="of">/10</span>`;
+    bigv.style.color = hue(v);
+    if (from !== "rng") rng.value = isNum(v) ? v : 0;
+    if (from !== "num") num.value = isNum(v) ? fmt(v) : "";
+    paintRange(rng, v);
+  };
+  rng.addEventListener("input", () => apply(r1(+rng.value), "rng"));
+  num.addEventListener("input", () => {
+    const raw = num.value.trim();
+    if (raw === "") return apply(null, "num");
+    const v = parseFloat(raw);
+    if (!isNaN(v)) apply(clamp(r1(v)), "num");
+  });
+  num.addEventListener("blur", () => { num.value = isNum(t.rating) ? fmt(t.rating) : ""; });
+  bindScore(bigv, () => t.rating, (v) => apply(v, "big"));
+  $("#clearRate").onclick = () => apply(null);
+  $("#trkRev").addEventListener("input", (e) => { t.review = e.target.value; save(); });
+  $("#toArtist").onclick = () => { if (t.artistKey) openSheet("artist", t.artistKey); };
+  if ($("#toAlbum")) $("#toAlbum").onclick = () => openSheet("album", t.albumId);
+  $$(".sec .lrow").forEach(r => r.onclick = () => { if (r.dataset.id !== t.id) openSheet("track", r.dataset.id); });
+  $("#renameTrack").onclick = () => {
+    const name = prompt("곡 제목", t.title);
+    if (name === null) return;
+    mark("곡 정보 수정");
+    t.title = name.trim() || t.title;
+    save(); render(); renderSheet();
+  };
+  $("#delTrack").onclick = () => {
+    if (!confirm(`"${t.title}"을(를) 삭제할까요?`)) return;
+    mark("곡 삭제");
+    db.tracks = db.tracks.filter(x => x.id !== t.id);
+    save(); closeSheet(); render(); toast("삭제했습니다 · Ctrl+Z로 되돌리기");
+  };
+}
+
+/* ---------- 아티스트 시트 ---------- */
+function renderArtistSheet() {
+  const a = artistByKey(ui.sheet.id);
+  if (!a) return closeSheet();
+  const cov = (a.albums.find(x => x.cover) || {}).cover || "";
+  tintFrom(cov);
+  const rated = a.tracks.filter(t => isNum(t.rating)).sort((x, y) => y.rating - x.rating);
+  const albs = a.albums.slice().sort((x, y) => String(y.year || "").localeCompare(String(x.year || "")));
+  const dist = histo(a.tracks.map(t => t.rating).filter(isNum));
+  el.sheetBody.innerHTML = `
+    <div class="hero">
+      ${cov ? `<img class="wash" src="${esc(cov)}" alt="">` : ""}
+      <div class="hero-row">
+        <div class="hero-art" style="border-radius:50%">${mosaicHTML(a.albums.filter(x => x.cover).slice(0, 4).map(x => x.cover), a.name, "width:100%;height:100%;border-radius:0")}</div>
+        <div style="min-width:0">
+          <h1>${esc(a.name)}</h1>
+          <div class="facts">앨범 ${a.albums.length}장 · 곡 ${a.tracks.length}곡 · 평가 ${a.nRated}곡</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>아티스트 점수</h3>
+      <div class="raterow">
+        <span class="bigscore" id="bigVal" style="color:${hue(isNum(a.own) ? a.own : (a.trkAvg ?? a.albAvg))}" tabindex="0">${isNum(a.own) ? fmt(a.own) : (isNum(a.trkAvg) ? fmt(a.trkAvg) : (isNum(a.albAvg) ? fmt(a.albAvg) : "–"))}<span class="of">/10</span></span>
+        <div class="rangewrap"><input type="range" id="rng" min="0" max="10" step="0.1" value="${a.own ?? a.trkAvg ?? 0}"></div>
+      </div>
+      <div class="rate-actions">
+        <span class="hint">${isNum(a.own) ? "직접 매긴 점수입니다." : "아직 직접 매기지 않아 곡 평균을 보여줍니다."}</span>
+        ${isNum(a.own) ? `<button class="btn ghost" id="clearOwn">직접 점수 지우기</button>` : ""}
+      </div>
+      <div class="statgrid" style="margin-top:16px">
+        <div class="stat"><div class="k">곡 평균</div><div class="v" style="color:${hue(a.trkAvg)}">${isNum(a.trkAvg) ? fmt(a.trkAvg) : "–"}</div><div class="s">${a.nRated}곡 기준</div></div>
+        <div class="stat"><div class="k">앨범 평균</div><div class="v" style="color:${hue(a.albAvg)}">${isNum(a.albAvg) ? fmt(a.albAvg) : "–"}</div><div class="s">${a.albums.filter(x => isNum(x.rating)).length}장 기준</div></div>
+        <div class="stat"><div class="k">최고 곡</div><div class="v" style="font-size:17px;letter-spacing:-.02em">${rated.length ? esc(rated[0].title) : "–"}</div><div class="s">${rated.length ? fmt(rated[0].rating) : ""}</div></div>
+        <div class="stat"><div class="k">점수 폭</div><div class="v">${rated.length > 1 ? fmt(rated[0].rating - rated[rated.length - 1].rating) : "–"}</div><div class="s">최고 − 최저</div></div>
+      </div>
+    </div>
+
+    ${dist.max ? `<div class="sec"><h3>점수 분포</h3>${histoSVG(dist)}</div>` : ""}
+
+    <div class="sec">
+      <h3>디스코그래피</h3>
+      <div class="discog">${albs.map(x => `
+        <button class="card" data-aid="${x.id}">
+          <div class="art">${artHTML(x)}<span class="badge ${isNum(x.rating) ? "" : "none"}">${isNum(x.rating) ? fmt(x.rating) : "–"}</span></div>
+          <div class="meta"><div class="t">${esc(x.title)}</div><div class="dyear">${esc(x.year || "")}</div></div>
+        </button>`).join("") || `<p class="hint">등록된 앨범이 없습니다.</p>`}</div>
+    </div>
+
+    ${rated.length ? `<div class="sec">
+      <h3>이 아티스트 곡 순위</h3>
+      <div class="ranklist">${rated.slice(0, 15).map((t, i) => `
+        <div class="rank" data-tid="${t.id}"><span class="i">${i + 1}</span>
+          <span class="n">${esc(t.title)} <small>${esc(albumTitleOf(t))}</small></span>
+          <span class="sc" style="color:${hue(t.rating)}">${fmt(t.rating)}</span></div>`).join("")}</div>
+    </div>` : ""}
+
+    <div class="sec">
+      <h3>아티스트 메모</h3>
+      <textarea class="review" id="artNote" placeholder="이 아티스트에 대한 생각">${esc(a.note)}</textarea>
+    </div>`;
+
+  const rng = $("#rng"), bigv = $("#bigVal");
+  paintRange(rng, isNum(a.own) ? a.own : a.trkAvg);
+  const apply = (v) => {
+    setArtistMeta(a.key, a.name, { rating: v });
+    bigv.innerHTML = (isNum(v) ? fmt(v) : "–") + `<span class="of">/10</span>`;
+    bigv.style.color = hue(v);
+    paintRange(rng, v);
+    save();
+  };
+  rng.addEventListener("input", () => apply(r1(+rng.value)));
+  bindScore(bigv, () => { const x = artistByKey(a.key); return isNum(x.own) ? x.own : null; }, (v) => apply(v));
+  if ($("#clearOwn")) $("#clearOwn").onclick = () => { setArtistMeta(a.key, a.name, { rating: null }); save(); renderSheet(); };
+  $("#artNote").addEventListener("input", (e) => { setArtistMeta(a.key, a.name, { note: e.target.value }); save(); });
+  $$(".discog .card").forEach(c => c.onclick = () => openSheet("album", c.dataset.aid));
+  $$(".rank[data-tid]").forEach(r => r.onclick = () => openSheet("track", r.dataset.tid));
+}
+
+/* ==================== 차트 ==================== */
+function histo(vals) {
+  const bins = new Array(20).fill(0); // 0.5 단위
+  for (const v of vals) bins[Math.min(19, Math.max(0, Math.ceil(v * 2) - 1))]++;
+  return { bins, max: Math.max(...bins), n: vals.length };
+}
+function histoSVG(h) {
+  if (!h.n) return `<p class="hint">아직 데이터가 없습니다.</p>`;
+  const W = 560, H = 130, pad = 22, bw = (W - pad * 2) / 20;
+  const bars = h.bins.map((c, i) => {
+    const x = pad + i * bw, hh = h.max ? (c / h.max) * (H - 34) : 0;
+    const v = (i + 1) / 2;
+    return `<rect x="${x + 1.2}" y="${H - 22 - hh}" width="${bw - 2.4}" height="${Math.max(hh, c ? 2 : 0)}" rx="2.5" fill="${hue(v)}" opacity=".92"><title>${fmt(v - 0.4)}–${fmt(v)} · ${c}개</title></rect>`;
+  }).join("");
+  const labs = [0, 2, 4, 6, 8, 10].map(v => `<text x="${pad + (v / 10) * (W - pad * 2)}" y="${H - 6}" text-anchor="middle">${v}</text>`).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${bars}${labs}</svg>`;
+}
+function lineSVG(points, opt) {
+  opt = opt || {};
+  if (points.length < 2) return `<p class="hint">추세를 그리려면 데이터가 더 필요합니다.</p>`;
+  const W = 560, H = 160, pad = 30, bot = 24;
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const y0 = opt.y0 !== undefined ? opt.y0 : Math.min(...ys) - .4;
+  const y1 = opt.y1 !== undefined ? opt.y1 : Math.max(...ys) + .4;
+  const px = (x) => pad + ((x - x0) / (x1 - x0 || 1)) * (W - pad - 12);
+  const py = (y) => (H - bot) - ((y - y0) / (y1 - y0 || 1)) * (H - bot - 12);
+  const d = points.map((p, i) => (i ? "L" : "M") + px(p.x).toFixed(1) + " " + py(p.y).toFixed(1)).join(" ");
+  const dots = points.map(p => `<circle cx="${px(p.x).toFixed(1)}" cy="${py(p.y).toFixed(1)}" r="3.4" fill="${hue(p.y)}"><title>${p.label} · ${fmt(p.y)}</title></circle>`).join("");
+  const grid = [y0, (y0 + y1) / 2, y1].map(v => `<line class="gl" x1="${pad}" x2="${W - 12}" y1="${py(v)}" y2="${py(v)}" stroke-width=".7"/><text x="4" y="${py(v) + 3}">${fmt(v)}</text>`).join("");
+  const labs = points.filter((p, i) => i === 0 || i === points.length - 1 || i === Math.floor(points.length / 2))
+    .map(p => `<text x="${px(p.x)}" y="${H - 6}" text-anchor="middle">${esc(p.label)}</text>`).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${grid}
+    <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>${dots}${labs}</svg>`;
+}
+function barsSVG(rows) {
+  if (!rows.length) return `<p class="hint">아직 데이터가 없습니다.</p>`;
+  const max = Math.max(...rows.map(r => r.v));
+  return `<div style="display:flex;flex-direction:column;gap:9px">${rows.map(r => `
+    <div style="display:grid;grid-template-columns:110px 1fr 46px;gap:10px;align-items:center;font-size:13.5px">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)">${esc(r.k)}</span>
+      <span style="height:9px;border-radius:99px;background:var(--field);overflow:hidden">
+        <span style="display:block;height:100%;width:${max ? (r.v / max) * 100 : 0}%;background:${r.color || "var(--accent)"};border-radius:99px"></span></span>
+      <span style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${r.t}</span>
+    </div>`).join("")}</div>`;
+}
+function scatterSVG(pts) {
+  if (pts.length < 2) return `<p class="hint">앨범 점수와 곡 점수가 모두 있는 앨범이 2장 이상이면 그려집니다.</p>`;
+  const W = 400, H = 300, pad = 34;
+  const px = (v) => pad + (v / 10) * (W - pad - 14);
+  const py = (v) => (H - pad) - (v / 10) * (H - pad - 14);
+  const dots = pts.map(p => `<circle cx="${px(p.x).toFixed(1)}" cy="${py(p.y).toFixed(1)}" r="5" fill="${hue(p.y)}" opacity=".8"><title>${esc(p.label)} · 앨범 ${fmt(p.x)} / 곡평균 ${fmt(p.y)}</title></circle>`).join("");
+  const grid = [0, 2, 4, 6, 8, 10].map(v => `
+    <line class="gl" x1="${px(v)}" x2="${px(v)}" y1="${py(0)}" y2="${py(10)}" stroke-width=".6"/>
+    <line class="gl" x1="${px(0)}" x2="${px(10)}" y1="${py(v)}" y2="${py(v)}" stroke-width=".6"/>
+    <text x="${px(v)}" y="${H - 12}" text-anchor="middle">${v}</text>
+    <text x="${pad - 8}" y="${py(v) + 3}" text-anchor="end">${v}</text>`).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${grid}
+    <line x1="${px(0)}" y1="${py(0)}" x2="${px(10)}" y2="${py(10)}" stroke="var(--sep-2)" stroke-width="1.2" stroke-dasharray="4 4"/>
+    ${dots}
+    <text x="${W / 2}" y="${H}" text-anchor="middle">앨범 점수 →</text></svg>`;
+}
+
+/* ==================== 통계 ==================== */
+function renderStats() {
+  const A = db.albums.filter(a => isNum(a.rating)).map(a => a.rating);
+  const T = db.tracks.filter(t => isNum(t.rating)).map(t => t.rating);
+  const arts = artistList();
+  const prior = T.length ? mean(T) : 7.5;
+  const M = 5;
+
+  // 연도별
+  const byYear = new Map();
+  for (const a of db.albums) {
+    if (!isNum(a.rating) || !a.year) continue;
+    const y = parseInt(a.year);
+    if (!y) continue;
+    if (!byYear.has(y)) byYear.set(y, []);
+    byYear.get(y).push(a.rating);
+  }
+  const years = Array.from(byYear.entries()).sort((a, b) => a[0] - b[0])
+    .map(([y, v]) => ({ x: y, y: r1(mean(v)), label: String(y), n: v.length }));
+
+  // 장르별
+  const byGenre = new Map();
+  for (const a of db.albums) {
+    if (!a.genre) continue;
+    if (!byGenre.has(a.genre)) byGenre.set(a.genre, []);
+    if (isNum(a.rating)) byGenre.get(a.genre).push(a.rating);
+  }
+  const genres = Array.from(byGenre.entries()).filter(([, v]) => v.length)
+    .map(([k, v]) => ({ k, v: r1(mean(v)), t: fmt(r1(mean(v))), n: v.length, color: hue(r1(mean(v))) }))
+    .sort((a, b) => b.v - a.v).slice(0, 8);
+
+  // 아티스트 랭킹
+  const ranked = arts.map(a => {
+    const v = a.tracks.map(t => t.rating).filter(isNum);
+    const raw = v.length ? mean(v) : null;
+    const adj = v.length ? (mean(v) * v.length + prior * M) / (v.length + M) : null;
+    return { key: a.key, name: a.name, n: v.length, raw: raw === null ? null : r1(raw), adj: adj === null ? null : r1(adj) };
+  }).filter(a => a.n >= 1);
+  ranked.sort((a, b) => (db.settings.bayes ? b.adj - a.adj : b.raw - a.raw) || b.n - a.n);
+
+  // 앨범 vs 곡 평균
+  const gap = [];
+  for (const a of db.albums) {
+    const tv = trackAvg(a.id);
+    if (isNum(a.rating) && tv !== null) gap.push({ x: a.rating, y: tv, label: a.title, d: r1(a.rating - tv), id: a.id });
+  }
+  const gapSorted = gap.slice().sort((p, q) => Math.abs(q.d) - Math.abs(p.d)).slice(0, 6);
+
+  // 편차 큰 앨범
+  const spread = db.albums.map(a => {
+    const v = albumTracks(a.id).map(t => t.rating).filter(isNum);
+    return v.length >= 4 ? { id: a.id, title: a.title, artist: a.artist, s: r1(sd(v)), n: v.length } : null;
+  }).filter(Boolean).sort((a, b) => b.s - a.s).slice(0, 6);
+
+  // 최근 활동 (60일)
+  const day = 86400000, today = new Date().setHours(0, 0, 0, 0);
+  const act = new Array(60).fill(0);
+  for (const t of db.tracks) if (t.ratedAt) {
+    const d = Math.floor((today - new Date(t.ratedAt).setHours(0, 0, 0, 0)) / day);
+    if (d >= 0 && d < 60) act[59 - d]++;
+  }
+  for (const a of db.albums) if (a.ratedAt) {
+    const d = Math.floor((today - new Date(a.ratedAt).setHours(0, 0, 0, 0)) / day);
+    if (d >= 0 && d < 60) act[59 - d]++;
+  }
+  const actMax = Math.max(...act, 1);
+
+  const topT = db.tracks.filter(t => isNum(t.rating)).sort((a, b) => b.rating - a.rating).slice(0, 15);
+  const topA = db.albums.filter(a => isNum(a.rating)).sort((a, b) => b.rating - a.rating).slice(0, 10);
+  const H = histo(ui.statMode === "album" ? A : T);
+
+  el.wrap.innerHTML = `
+    <div class="statgrid">
+      <div class="stat"><div class="k">앨범</div><div class="v">${db.albums.length}</div><div class="s">평가 ${A.length}장</div></div>
+      <div class="stat"><div class="k">곡</div><div class="v">${db.tracks.length}</div><div class="s">평가 ${T.length}곡</div></div>
+      <div class="stat"><div class="k">앨범 평균</div><div class="v" style="color:${hue(A.length ? r1(mean(A)) : null)}">${A.length ? fmt(r1(mean(A))) : "–"}</div><div class="s">표준편차 ${A.length > 1 ? fmt(r1(sd(A))) : "–"}</div></div>
+      <div class="stat"><div class="k">곡 평균</div><div class="v" style="color:${hue(T.length ? r1(mean(T)) : null)}">${T.length ? fmt(r1(mean(T))) : "–"}</div><div class="s">표준편차 ${T.length > 1 ? fmt(r1(sd(T))) : "–"}</div></div>
+      <div class="stat"><div class="k">아티스트</div><div class="v">${arts.length}</div><div class="s">기록에 등장한 수</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div><h3>채점 성향</h3><p class="cap">${T.length ? `${ui.statMode === "album" ? "앨범" : "곡"} 점수가 어디에 몰려 있는지` : "곡에 점수를 매기면 분포가 나타납니다"}</p></div>
+        <div class="seg sm" id="statMode"><button data-m="track">곡</button><button data-m="album">앨범</button></div>
+      </div>
+      ${histoSVG(H)}
+      ${H.n ? `<p class="cap" style="margin:10px 0 0">가장 많이 준 구간은 ${fmt((H.bins.indexOf(H.max) + 1) / 2 - 0.4)}–${fmt((H.bins.indexOf(H.max) + 1) / 2)}점입니다.</p>` : ""}
+    </div>
+
+    <div class="cols2">
+      <div class="panel">
+        <h3>발매 연도별 평균</h3><p class="cap">어느 시대를 높게 치는지</p>
+        ${lineSVG(years, { y0: 0, y1: 10 })}
+      </div>
+      <div class="panel">
+        <h3>장르별 평균</h3><p class="cap">앨범 장르 기준 상위 8개</p>
+        ${barsSVG(genres.map(g => ({ k: `${g.k} (${g.n})`, v: g.v, t: g.t, color: g.color })))}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div><h3>아티스트 순위</h3><p class="cap">${db.settings.bayes ? `곡이 적은 아티스트는 전체 평균 쪽으로 당겨서 계산합니다 (사전값 ${fmt(r1(prior))}, 가중 ${M}곡)` : "곡 평균 그대로입니다. 1~2곡짜리 아티스트가 위로 올라옵니다"}</p></div>
+        <button class="btn" id="bayesBtn">${db.settings.bayes ? "보정 끄기" : "보정 켜기"}</button>
+      </div>
+      <div class="ranklist">${ranked.slice(0, 15).map((a, i) => `
+        <div class="rank" data-key="${esc(a.key)}"><span class="i">${i + 1}</span>
+          <span class="n">${esc(a.name)} <small>${a.n}곡</small></span>
+          <span class="sc" style="color:${hue(db.settings.bayes ? a.adj : a.raw)}">${fmt(db.settings.bayes ? a.adj : a.raw)}</span></div>`).join("")
+        || `<p class="hint">곡에 점수를 매기면 순위가 만들어집니다.</p>`}</div>
+    </div>
+
+    <div class="cols2">
+      <div class="panel">
+        <h3>최고의 곡</h3><p class="cap">전체 ${T.length}곡 중</p>
+        <div class="ranklist">${topT.map((t, i) => `
+          <div class="rank" data-tid="${t.id}"><span class="i">${i + 1}</span>
+            <span class="n">${esc(t.title)} <small>${esc(t.artist)}</small></span>
+            <span class="sc" style="color:${hue(t.rating)}">${fmt(t.rating)}</span></div>`).join("") || `<p class="hint">아직 없습니다.</p>`}</div>
+      </div>
+      <div class="panel">
+        <h3>최고의 앨범</h3><p class="cap">전체 ${A.length}장 중</p>
+        <div class="ranklist">${topA.map((a, i) => `
+          <div class="rank" data-aid="${a.id}"><span class="i">${i + 1}</span>
+            <span class="n">${esc(a.title)} <small>${esc(a.artist)}</small></span>
+            <span class="sc" style="color:${hue(a.rating)}">${fmt(a.rating)}</span></div>`).join("") || `<p class="hint">아직 없습니다.</p>`}</div>
+      </div>
+    </div>
+
+    <div class="cols2">
+      <div class="panel">
+        <h3>앨범 점수 vs 곡 평균</h3>
+        <p class="cap">점선 위쪽은 곡 평균보다 앨범을 낮게 준 경우, 아래쪽은 앨범을 후하게 준 경우입니다.</p>
+        ${scatterSVG(gap)}
+        ${gapSorted.length ? `<div class="ranklist" style="margin-top:10px">${gapSorted.map(g => `
+          <div class="rank" data-aid="${g.id}"><span class="i"></span>
+            <span class="n">${esc(g.label)}</span>
+            <span class="sc" style="color:${g.d > 0 ? hue(8.5) : hue(3)}">${g.d > 0 ? "+" : ""}${fmt(g.d)}</span></div>`).join("")}</div>` : ""}
+      </div>
+      <div class="panel">
+        <h3>기복이 큰 앨범</h3><p class="cap">수록곡 점수의 표준편차가 큰 순서 (4곡 이상 평가한 앨범)</p>
+        <div class="ranklist">${spread.map((s, i) => `
+          <div class="rank" data-aid="${s.id}"><span class="i">${i + 1}</span>
+            <span class="n">${esc(s.title)} <small>${esc(s.artist)}</small></span>
+            <span class="sc">±${fmt(s.s)}</span></div>`).join("") || `<p class="hint">한 앨범에서 4곡 이상 평가하면 나타납니다.</p>`}</div>
+        <h3 style="margin-top:22px">최근 60일 평가</h3>
+        <div style="display:flex;gap:2px;align-items:flex-end;height:56px;margin-top:10px">
+          ${act.map((c, i) => `<span title="${c}개" style="flex:1;border-radius:2px;background:${c ? "var(--accent)" : "var(--field)"};opacity:${c ? .35 + .65 * (c / actMax) : 1};height:${c ? Math.max(8, (c / actMax) * 56) : 4}px"></span>`).join("")}
+        </div>
+        <p class="cap" style="margin:8px 0 0">지난 60일 동안 ${act.reduce((s, x) => s + x, 0)}개에 점수를 매겼습니다.</p>
+      </div>
+    </div>`;
+
+  $$("#statMode button").forEach(b => {
+    b.classList.toggle("on", b.dataset.m === ui.statMode);
+    b.onclick = () => { ui.statMode = b.dataset.m; renderStats(); };
+  });
+  $("#bayesBtn").onclick = () => { db.settings.bayes = !db.settings.bayes; save(); renderStats(); };
+  $$(".rank[data-tid]").forEach(r => r.onclick = () => openSheet("track", r.dataset.tid));
+  $$(".rank[data-aid]").forEach(r => r.onclick = () => openSheet("album", r.dataset.aid));
+  $$(".rank[data-key]").forEach(r => r.onclick = () => openSheet("artist", r.dataset.key));
+}
+
+/* ==================== 아티스트 비교 ==================== */
+function openCompare() {
+  const list = artistList().sort((a, b) => (b.albums.length + b.tracks.length) - (a.albums.length + a.tracks.length));
+  if (list.length < 2) return toast("비교하려면 아티스트가 2명 이상 필요합니다");
+  ui.cmp = ui.cmp.filter(k => list.some(a => a.key === k));
+  el.dlgTitle.textContent = "아티스트 비교";
+  const opts = (sel) => list.map(a => `<option value="${esc(a.key)}" ${sel === a.key ? "selected" : ""}>${esc(a.name)}</option>`).join("");
+  const a0 = ui.cmp[0] || list[0].key, a1 = ui.cmp[1] || list[1].key;
+  ui.cmp = [a0, a1];
+  const stat = (k) => {
+    const a = artistByKey(k);
+    const tv = a.tracks.map(t => t.rating).filter(isNum);
+    const av = a.albums.map(x => x.rating).filter(isNum);
+    const best = tv.length ? a.tracks.filter(t => isNum(t.rating)).sort((x, y) => y.rating - x.rating)[0] : null;
+    return { a, tv, av, best };
+  };
+  const col = (k) => {
+    const s = stat(k);
+    return `<div class="cmpcol">
+      <div style="font-size:16px;font-weight:640;letter-spacing:-.025em;margin-bottom:10px">${esc(s.a.name)}</div>
+      <div class="cmprow"><span>곡 평균</span><b style="color:${hue(s.a.trkAvg)}">${isNum(s.a.trkAvg) ? fmt(s.a.trkAvg) : "–"}</b></div>
+      <div class="cmprow"><span>앨범 평균</span><b style="color:${hue(s.a.albAvg)}">${isNum(s.a.albAvg) ? fmt(s.a.albAvg) : "–"}</b></div>
+      <div class="cmprow"><span>앨범 수</span><b>${s.a.albums.length}</b></div>
+      <div class="cmprow"><span>평가한 곡</span><b>${s.tv.length}</b></div>
+      <div class="cmprow"><span>편차</span><b>${s.tv.length > 1 ? "±" + fmt(r1(sd(s.tv))) : "–"}</b></div>
+      <div class="cmprow"><span>9점 이상</span><b>${s.tv.filter(v => v >= 9).length}곡</b></div>
+      <div class="cmprow" style="display:block"><span>최고 곡</span>
+        <div style="margin-top:3px;font-size:13.5px">${s.best ? esc(s.best.title) + " · " + fmt(s.best.rating) : "–"}</div></div>
+    </div>`;
+  };
+  el.dlgBody.innerHTML = `
+    <div class="two" style="margin-bottom:14px">
+      <select class="sel" id="cmp0" style="width:100%">${opts(a0)}</select>
+      <select class="sel" id="cmp1" style="width:100%">${opts(a1)}</select>
+    </div>
+    <div class="cmpwrap">${col(a0)}${col(a1)}</div>`;
+  $("#cmp0").onchange = (e) => { ui.cmp[0] = e.target.value; openCompare(); };
+  $("#cmp1").onchange = (e) => { ui.cmp[1] = e.target.value; openCompare(); };
+  openDlg();
+}
+
+/* ==================== 추가 다이얼로그 ==================== */
+function openDlg() { el.dlg.classList.add("show"); el.scrim.classList.add("show"); }
+function closeDlg() {
+  el.dlg.classList.remove("show");
+  if (!ui.sheet) el.scrim.classList.remove("show");
+  ui.dlg = null;
+}
+let addState = { tab: "album", results: [], busy: false, err: "", editing: null };
+
+function openAdd() {
+  addState = { tab: "album", results: [], busy: false, err: "", editing: null };
+  el.dlgTitle.textContent = "추가";
+  renderAdd();
+  openDlg();
+  setTimeout(() => $("#sq") && $("#sq").focus(), 80);
+}
+function openManual(a) {
+  addState = { tab: "manual", results: [], busy: false, err: "", editing: a || null };
+  el.dlgTitle.textContent = a ? "앨범 정보 수정" : "추가";
+  renderAdd();
+  openDlg();
+}
+function renderAdd() {
+  const s = addState;
+  el.dlgBody.innerHTML = `
+    ${s.editing ? "" : `<div class="seg sm" id="addSeg" style="margin-bottom:14px">
+      <button data-t="album">앨범 검색</button><button data-t="song">곡 검색</button><button data-t="manual">직접 입력</button>
+    </div>`}
+    ${s.tab === "manual" ? manualHTML(s.editing) : `
+      <div class="searchbox" style="flex:1;max-width:none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
+        <input id="sq" placeholder="${s.tab === "song" ? "곡명 또는 아티스트" : "앨범명 또는 아티스트"}" autocomplete="off">
+      </div>
+      <div class="rate-actions" style="margin-top:11px">
+        <button class="btn primary" id="goSearch">검색</button>
+        <span class="hint" id="sHint">${s.busy ? `<span class="spin"></span> 찾는 중…` : esc(s.err)}</span>
+      </div>
+      <div id="resWrap">${resultsHTML()}</div>`}`;
+
+  $$("#addSeg button").forEach(b => {
+    b.classList.toggle("on", b.dataset.t === s.tab);
+    b.onclick = () => { s.tab = b.dataset.t; s.results = []; s.err = ""; renderAdd(); setTimeout(() => $("#sq") && $("#sq").focus(), 40); };
+  });
+  if (s.tab === "manual") return bindManual();
+  $("#goSearch").onclick = doSearch;
+  $("#sq").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+  bindResults();
+}
+function resultsHTML() {
+  const s = addState;
+  if (!s.results.length) return "";
+  return `<div class="res">` + s.results.map((r, i) => `
+    <button class="rescard" data-i="${i}">
+      ${r.cover ? `<img src="${esc(r.cover)}" alt="" loading="lazy">` : `<span style="width:48px;height:48px;border-radius:7px;background:${fauxCover(r.title, r.artist)}"></span>`}
+      <span style="min-width:0;flex:1">
+        <span class="t" style="display:block">${esc(r.title)}</span>
+        <span class="s">${[r.artist, r.year, r.kind === "song" ? r.album : (r.n ? r.n + "곡" : "")].filter(Boolean).map(esc).join(" · ")}</span>
+      </span>
+      <span class="add">추가</span>
+    </button>`).join("") + `</div>`;
+}
+function bindResults() {
+  $$("#resWrap .rescard").forEach(b => b.onclick = () => addFromResult(addState.results[+b.dataset.i], b));
+}
+async function doSearch() {
+  const s = addState;
+  const term = ($("#sq").value || "").trim();
+  if (!term) return;
+  s.busy = true; s.err = ""; s.results = [];
+  $("#sHint").innerHTML = `<span class="spin"></span> 찾는 중…`;
+  try {
+    s.results = s.tab === "song" ? await searchSongs(term, db.settings.country) : await searchAlbums(term, db.settings.country);
+    s.err = s.results.length ? "" : "검색 결과가 없습니다";
+    itunesBlocked = false;
+  } catch (e) {
+    itunesBlocked = true;
+    s.err = "";
+  }
+  s.busy = false;
+  $("#sHint").innerHTML = !itunesBlocked ? esc(s.err)
+    : (window.storage
+      ? `애플 음악 검색이 이 화면에서 차단돼 있습니다. <button class="btn" id="viaClaude" style="margin-left:6px">Claude로 찾기</button>
+         <span class="hint" style="display:block;margin-top:6px">사용량이 조금 소모됩니다.</span>`
+      : "검색에 실패했습니다. 잠시 뒤 다시 시도하거나 직접 입력으로 넣어 주세요.");
+  const vc = $("#viaClaude");
+  if (vc) vc.onclick = () => claudeSearch(term);
+  $("#resWrap").innerHTML = resultsHTML();
+  bindResults();
+}
+async function claudeSearch(term) {
+  const s = addState;
+  $("#sHint").innerHTML = `<span class="spin"></span> Claude가 찾는 중… (몇 초 걸립니다)`;
+  try {
+    s.results = s.tab === "song" ? await claudeSearchSongs(term) : await claudeSearchAlbums(term);
+    $("#sHint").textContent = s.results.length ? "Claude가 찾은 결과입니다. 정보가 틀리면 추가한 뒤 수정하세요." : "찾지 못했습니다";
+  } catch (e) {
+    s.results = [];
+    $("#sHint").textContent = "Claude 조회도 실패했습니다: " + e.message + " — 직접 입력으로 넣어 주세요.";
+  }
+  $("#resWrap").innerHTML = resultsHTML();
+  bindResults();
+}
+async function addFromResult(r, btn) {
+  const lab = $(".add", btn);
+  lab.innerHTML = `<span class="spin"></span>`;
+  if (r.kind === "song") {
+    mark("곡 추가");
+    const t = mkTrack({ title: r.title, ms: r.ms, no: r.no, disc: r.disc, album: r.album }, null, r.artist, 0);
+    db.tracks.push(t);
+    save(); render();
+    lab.textContent = "완료";
+    toast(`${r.title} 추가`);
+    setTimeout(() => { closeDlg(); openSheet("track", t.id); }, 280);
+    return;
+  }
+  const dup = db.albums.find(a => akey(a.title) === akey(r.title) && a.artistKey === akey(r.artist));
+  if (dup && !confirm(`"${r.title}"은(는) 이미 있습니다. 그래도 추가할까요?`)) { lab.textContent = "추가"; return; }
+  mark("앨범 추가");
+  const a = {
+    id: uid("a"), title: r.title, artist: r.artist, artistKey: akey(r.artist),
+    year: r.year, genre: r.genre, cover: r.cover, appleId: r.appleId,
+    rating: null, review: "", added: now(), ratedAt: null
+  };
+  db.albums.push(a);
+  let msg = `${r.title} 추가`;
+  try {
+    const ts = r.via === "claude"
+      ? await claudeTracks(r.title, r.artist)
+      : await fetchTracks(r.appleId, db.settings.country);
+    ts.forEach((t, i) => db.tracks.push(mkTrack(t, a.id, a.artist, i)));
+    if (!ts.length) msg += " · 수록곡을 찾지 못했습니다";
+  } catch (e) {
+    msg += " · 수록곡 조회 실패, 앨범에서 다시 가져오세요";
+  }
+  save(); render();
+  lab.textContent = "완료";
+  toast(msg);
+  setTimeout(() => { closeDlg(); openSheet("album", a.id); }, 280);
+}
+function manualHTML(a) {
+  return `
+    <label class="field"><span>앨범명</span><input id="mTitle" value="${esc(a ? a.title : "")}" placeholder="필수"></label>
+    <div class="two">
+      <label class="field"><span>아티스트</span><input id="mArtist" value="${esc(a ? a.artist : "")}"></label>
+      <label class="field"><span>발매 연도</span><input id="mYear" value="${esc(a ? a.year : "")}" inputmode="numeric" placeholder="2024"></label>
+    </div>
+    <div class="two">
+      <label class="field"><span>장르</span><input id="mGenre" value="${esc(a ? a.genre : "")}"></label>
+      <label class="field"><span>커버 이미지 주소</span><input id="mCover" value="${esc(a ? a.cover : "")}" placeholder="비워두면 자동 생성"></label>
+    </div>
+    ${a ? "" : `<label class="field"><span>수록곡 — 한 줄에 한 곡</span><textarea id="mTracks" rows="5" placeholder="곡 제목을 줄바꿈으로 구분해서 넣으세요."></textarea></label>`}
+    <div class="rate-actions" style="margin-top:6px">
+      <button class="btn primary" id="mSave">${a ? "저장" : "추가"}</button>
+      <button class="btn" id="mFind">커버 자동으로 찾기</button>
+      <span class="hint" id="mHint"></span>
+    </div>`;
+}
+function bindManual() {
+  const a = addState.editing;
+  $("#mSave").onclick = () => {
+    const title = $("#mTitle").value.trim();
+    if (!title) return toast("앨범명을 입력해 주세요");
+    mark(a ? "앨범 정보 수정" : "앨범 추가");
+    if (a) {
+      a.title = title; a.artist = $("#mArtist").value.trim(); a.artistKey = akey(a.artist);
+      a.year = $("#mYear").value.trim(); a.genre = $("#mGenre").value.trim(); a.cover = $("#mCover").value.trim();
+      for (const t of albumTracks(a.id)) if (!t.artist) { t.artist = a.artist; t.artistKey = a.artistKey; }
+      save(); render(); renderSheet(); closeDlg(); toast("저장했습니다");
+      return;
+    }
+    const artist = $("#mArtist").value.trim();
+    const na = {
+      id: uid("a"), title, artist, artistKey: akey(artist),
+      year: $("#mYear").value.trim(), genre: $("#mGenre").value.trim(),
+      cover: $("#mCover").value.trim(), appleId: null, rating: null, review: "", added: now(), ratedAt: null
+    };
+    db.albums.push(na);
+    const lines = ($("#mTracks").value || "").split("\n").map(x => x.trim()).filter(Boolean);
+    lines.forEach((name, i) => db.tracks.push(mkTrack({ title: name, no: i + 1 }, na.id, artist, i)));
+    save(); render(); closeDlg(); openSheet("album", na.id);
+  };
+  $("#mFind").onclick = async () => {
+    const hint = $("#mHint");
+    const term = ($("#mArtist").value + " " + $("#mTitle").value).trim();
+    if (!term) return;
+    hint.innerHTML = `<span class="spin"></span> 찾는 중…`;
+    try {
+      const hits = await searchAlbums(term, db.settings.country);
+      if (!hits.length) { hint.textContent = "찾지 못했습니다"; return; }
+      $("#mCover").value = hits[0].cover;
+      if (!$("#mYear").value) $("#mYear").value = hits[0].year;
+      if (!$("#mGenre").value) $("#mGenre").value = hits[0].genre;
+      hint.textContent = "커버를 채웠습니다";
+    } catch (e) {
+      try {
+        const alt = await claudeSearchAlbums(term);
+        if (!alt.length) { hint.textContent = "찾지 못했습니다"; return; }
+        if (alt[0].cover) $("#mCover").value = alt[0].cover;
+        if (!$("#mYear").value) $("#mYear").value = alt[0].year;
+        if (!$("#mGenre").value) $("#mGenre").value = alt[0].genre;
+        hint.textContent = alt[0].cover ? "Claude가 채웠습니다" : "커버 주소는 찾지 못했습니다";
+      } catch (e2) { hint.textContent = "검색에 실패했습니다"; }
+    }
+  };
+}
+
+/* ==================== 내보내기 · 가져오기 ==================== */
+function download(name, text, mime) {
+  try {
+    const b = new Blob([text], { type: mime + ";charset=utf-8" });
+    const u = URL.createObjectURL(b);
+    const a = document.createElement("a");
+    a.href = u; a.download = name; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(u), 2000);
+    return true;
+  } catch (e) { return false; }
+}
+const stamp = () => new Date().toISOString().slice(0, 10);
+
+function exportJSON() {
+  const text = JSON.stringify(db, null, 2);
+  download(`음악기록_${stamp()}.json`, text, "application/json");
+  showText("JSON 내보내기", text, `음악기록_${stamp()}.json`, "application/json");
+}
+const COLS = ["type", "album_id", "album_title", "artist", "year", "genre", "cover_url", "album_rating", "album_review",
+  "track_no", "track_title", "track_ms", "track_rating", "track_review", "rated_at"];
+const cell = (v) => {
+  v = v === null || v === undefined ? "" : String(v);
+  return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+};
+const iso = (ms) => ms ? new Date(ms).toISOString().slice(0, 10) : "";
+function toCSV() {
+  const rows = [COLS.join(",")];
+  for (const a of db.albums) {
+    rows.push(["album", a.id, a.title, a.artist, a.year, a.genre, a.cover, fmt(a.rating), a.review, "", "", "", "", "", iso(a.ratedAt)].map(cell).join(","));
+    for (const t of albumTracks(a.id)) {
+      rows.push(["track", a.id, a.title, t.artist || a.artist, "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, iso(t.ratedAt)].map(cell).join(","));
+    }
+  }
+  for (const t of db.tracks.filter(x => !x.albumId)) {
+    rows.push(["track", "", t.album || "", t.artist, "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, iso(t.ratedAt)].map(cell).join(","));
+  }
+  for (const a of db.artists) {
+    if (!isNum(a.rating) && !a.note) continue;
+    rows.push(["artist", "", "", a.name, "", "", "", fmt(a.rating), a.note, "", "", "", "", "", ""].map(cell).join(","));
+  }
+  return "\uFEFF" + rows.join("\r\n");
+}
+function exportCSV() {
+  const text = toCSV();
+  download(`음악기록_${stamp()}.csv`, text, "text/csv");
+  showText("CSV 내보내기", text, `음악기록_${stamp()}.csv`, "text/csv");
+}
+function showText(title, text, fname, mime) {
+  el.dlgTitle.textContent = title;
+  el.dlgBody.innerHTML = `
+    <p class="cap" style="margin:0 0 10px;color:var(--text-2);font-size:13.5px">
+      다운로드가 시작되지 않았다면 아래 내용을 복사해서 파일로 저장하세요.</p>
+    <textarea class="textout" id="outText" readonly>${esc(text)}</textarea>
+    <div class="rate-actions" style="margin-top:12px">
+      <button class="btn primary" id="copyOut">전체 복사</button>
+      <button class="btn" id="dlAgain">다시 내려받기</button>
+      <span class="hint">${text.length.toLocaleString("ko-KR")}자</span>
+    </div>`;
+  $("#copyOut").onclick = async () => {
+    const ta = $("#outText");
+    try { await navigator.clipboard.writeText(text); toast("복사했습니다"); }
+    catch (e) { ta.focus(); ta.select(); document.execCommand("copy"); toast("복사했습니다"); }
+  };
+  $("#dlAgain").onclick = () => download(fname, text, mime);
+  openDlg();
+}
+function parseCSV(text) {
+  const rows = []; let row = [], cur = "", q = false, i = 0;
+  text = text.replace(/^\uFEFF/, "");
+  while (i < text.length) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i += 2; continue; } q = false; i++; continue; }
+      cur += c; i++; continue;
+    }
+    if (c === '"') { q = true; i++; continue; }
+    if (c === ",") { row.push(cur); cur = ""; i++; continue; }
+    if (c === "\r") { i++; continue; }
+    if (c === "\n") { row.push(cur); cur = ""; rows.push(row); row = []; i++; continue; }
+    cur += c; i++;
+  }
+  if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(v => v.trim() !== ""));
+}
+const ALIAS = {
+  type: ["type", "종류"],
+  album_id: ["album_id", "id"],
+  album_title: ["album_title", "album", "title", "앨범", "앨범명"],
+  artist: ["artist", "아티스트", "가수"],
+  year: ["year", "release_year", "발매", "발매년도", "발매연도", "연도"],
+  genre: ["genre", "장르"],
+  cover_url: ["cover_url", "cover", "artwork", "image", "커버"],
+  album_rating: ["album_rating", "rating", "score", "평점", "점수"],
+  album_review: ["album_review", "review", "comment", "평", "코멘트", "메모"],
+  track_no: ["track_no", "no", "#", "번호"],
+  track_title: ["track_title", "track", "song", "곡", "곡명"],
+  track_ms: ["track_ms", "duration_ms", "ms"],
+  track_rating: ["track_rating", "곡평점", "곡점수"],
+  track_review: ["track_review", "곡평", "곡메모"],
+  rated_at: ["rated_at", "평가일"]
+};
+function mapHeader(h) {
+  const idx = {};
+  h.forEach((raw, i) => {
+    const k = raw.trim().toLowerCase();
+    for (const [f, names] of Object.entries(ALIAS)) if (names.includes(k) && idx[f] === undefined) idx[f] = i;
+  });
+  return idx;
+}
+function fromCSV(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) throw new Error("내용이 없습니다");
+  const idx = mapHeader(rows[0]);
+  if (idx.album_title === undefined && idx.track_title === undefined) throw new Error("앨범명이나 곡명 열을 찾지 못했습니다");
+  const get = (r, f) => idx[f] === undefined ? "" : (r[idx[f]] ?? "").trim();
+  const num = (v) => v === "" || isNaN(parseFloat(v)) ? null : clamp(r1(parseFloat(v)));
+  const byKey = new Map();
+  const out = { version: 2, albums: [], tracks: [], artists: [] };
+  const keyOf = (r) => get(r, "album_id") || (get(r, "album_title") + "|" + get(r, "artist")).toLowerCase();
+
+  for (const r of rows.slice(1)) {
+    const type = (get(r, "type") || "album").toLowerCase();
+    if (type === "artist") {
+      const nm = get(r, "artist");
+      if (nm) out.artists.push({ id: uid("r"), key: akey(nm), name: nm, rating: num(get(r, "album_rating")), note: get(r, "album_review") });
+      continue;
+    }
+    const at = get(r, "album_title");
+    let a = null;
+    if (at) {
+      const k = keyOf(r);
+      a = byKey.get(k);
+      if (!a) {
+        a = { id: get(r, "album_id") || uid("a"), title: at || "제목 없음", artist: get(r, "artist"),
+              artistKey: akey(get(r, "artist")), year: get(r, "year"), genre: get(r, "genre"),
+              cover: get(r, "cover_url"), appleId: null, rating: null, review: "", added: now(), ratedAt: null };
+        byKey.set(k, a); out.albums.push(a);
+      }
+    }
+    if (type === "album") {
+      if (!a) continue;
+      if (get(r, "artist")) { a.artist = get(r, "artist"); a.artistKey = akey(a.artist); }
+      if (get(r, "year")) a.year = get(r, "year");
+      if (get(r, "genre")) a.genre = get(r, "genre");
+      if (get(r, "cover_url")) a.cover = get(r, "cover_url");
+      if (get(r, "album_rating")) { a.rating = num(get(r, "album_rating")); a.ratedAt = Date.parse(get(r, "rated_at")) || now(); }
+      if (get(r, "album_review")) a.review = get(r, "album_review");
+    }
+    const tt = get(r, "track_title");
+    if (tt) {
+      out.tracks.push({
+        id: uid("t"), albumId: a ? a.id : null, no: parseInt(get(r, "track_no")) || out.tracks.length + 1, disc: 1,
+        title: tt, artist: get(r, "artist") || (a ? a.artist : ""), artistKey: akey(get(r, "artist") || (a ? a.artist : "")),
+        album: a ? "" : get(r, "album_title"), ms: parseInt(get(r, "track_ms")) || 0,
+        rating: num(get(r, "track_rating")), review: get(r, "track_review"),
+        added: now(), ratedAt: Date.parse(get(r, "rated_at")) || (num(get(r, "track_rating")) !== null ? now() : null)
+      });
+    }
+  }
+  return out;
+}
+async function ingest(incoming, name) {
+  const has = db.albums.length + db.tracks.length;
+  let merge = true;
+  if (has) merge = confirm(`지금 앨범 ${db.albums.length}장 · 곡 ${db.tracks.length}곡이 있습니다.\n\n확인 = 기존 기록에 합치기\n취소 = 파일 내용으로 전부 교체`);
+  await maybeSnapshot(true);
+  mark("파일 가져오기");
+  if (!merge) {
+    db = normalize(Object.assign({ settings: db.settings }, incoming));
+    save(true); render();
+    toast(`${name} · 앨범 ${db.albums.length}장, 곡 ${db.tracks.length}곡을 불러왔습니다`);
+    return;
+  }
+  const inc = normalize(incoming);
+  const aKeyOf = (a) => akey(a.title) + "|" + a.artistKey;
+  const byId = new Map(db.albums.map(a => [a.id, a]));
+  const byName = new Map(db.albums.map(a => [aKeyOf(a), a]));
+  const idMap = new Map();
+  let addA = 0, updA = 0, addT = 0, updT = 0;
+  for (const a of inc.albums) {
+    const hitA = byId.get(a.id) || byName.get(aKeyOf(a));
+    if (hitA) {
+      idMap.set(a.id, hitA.id);
+      if (isNum(a.rating)) { hitA.rating = a.rating; hitA.ratedAt = a.ratedAt || now(); }
+      if (a.review) hitA.review = a.review;
+      if (a.cover && !hitA.cover) hitA.cover = a.cover;
+      if (a.year && !hitA.year) hitA.year = a.year;
+      if (a.genre && !hitA.genre) hitA.genre = a.genre;
+      updA++;
+    } else {
+      idMap.set(a.id, a.id);
+      db.albums.push(a); byId.set(a.id, a); byName.set(aKeyOf(a), a); addA++;
+    }
+  }
+  for (const t of inc.tracks) {
+    const targetAlbum = t.albumId ? idMap.get(t.albumId) || t.albumId : null;
+    const exist = db.tracks.find(x => x.albumId === targetAlbum && akey(x.title) === akey(t.title)
+      && (targetAlbum || x.artistKey === t.artistKey));
+    if (exist) {
+      if (isNum(t.rating)) { exist.rating = t.rating; exist.ratedAt = t.ratedAt || now(); }
+      if (t.review) exist.review = t.review;
+      if (t.ms && !exist.ms) exist.ms = t.ms;
+      updT++;
+    } else {
+      t.albumId = targetAlbum;
+      db.tracks.push(t); addT++;
+    }
+  }
+  for (const ar of inc.artists) {
+    const cur = db.artists.find(x => x.key === ar.key);
+    if (cur) { if (isNum(ar.rating)) cur.rating = ar.rating; if (ar.note) cur.note = ar.note; }
+    else db.artists.push(ar);
+  }
+  db = normalize(db);
+  save(true); render();
+  if (ui.sheet) renderSheet();
+  toast(`${name} · 앨범 +${addA}(갱신 ${updA}) · 곡 +${addT}(갱신 ${updT})`);
+}
+function readFile(f) {
+  const r = new FileReader();
+  r.onload = async () => {
+    try {
+      const text = String(r.result);
+      const trimmed = text.trim();
+      const data = (/\.json$/i.test(f.name) || trimmed.startsWith("{") || trimmed.startsWith("["))
+        ? JSON.parse(text) : fromCSV(text);
+      const n = (data.albums || []).length + (data.tracks || []).length;
+      if (!n) return toast("가져올 내용이 없습니다");
+      await ingest(data, f.name);
+    } catch (e) { toast("파일을 읽지 못했습니다: " + e.message); }
+  };
+  r.readAsText(f);
+}
+
+/* ---------- 복구 지점 ---------- */
+async function openSnapshots() {
+  el.dlgTitle.textContent = "복구 지점";
+  el.dlgBody.innerHTML = `<p class="hint">불러오는 중…</p>`;
+  openDlg();
+  let meta = { at: [] };
+  try { meta = JSON.parse(LS.get("snap_meta") || '{"at":[]}'); } catch (e) { /* 없으면 빈 목록 */ }
+  const items = (meta.at || []).sort((a, b) => b.at - a.at);
+  el.dlgBody.innerHTML = `
+    <p class="cap" style="margin:0 0 12px;color:var(--text-2);font-size:13.5px">
+      6시간에 한 번씩, 그리고 파일을 가져오거나 다른 기기와 충돌할 때 자동으로 만들어 둔 사본입니다. 이 브라우저에 최대 3개까지 보관합니다.</p>
+    ${items.length ? items.map(s => `
+      <div class="cmprow" style="align-items:center;padding:10px 0">
+        <span>${new Date(s.at).toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+          <small style="color:var(--text-2);display:block">앨범 ${s.albums}장 · 곡 ${s.tracks}곡</small></span>
+        <button class="btn" data-slot="${s.slot}">이 시점으로 되돌리기</button>
+      </div>`).join("") : `<p class="hint">아직 만들어진 복구 지점이 없습니다.</p>`}
+    <div class="rate-actions" style="margin-top:16px">
+      <button class="btn" id="snapNow">지금 상태를 복구 지점으로 저장</button>
+    </div>`;
+  $$("#dlgBody [data-slot]").forEach(b => b.onclick = async () => {
+    if (!confirm("이 시점의 기록으로 되돌릴까요? 현재 내용은 덮어씁니다.\n(되돌린 뒤에도 Ctrl+Z로 취소할 수 있습니다)")) return;
+    try {
+      const snap = JSON.parse(LS.get(SNAP_KEYS[+b.dataset.slot]));
+      mark("복구 지점 되돌리기");
+      db = normalize(snap.db);
+      save(true); render(); closeDlg(); closeSheet();
+      toast("복구했습니다");
+    } catch (e) { toast("복구에 실패했습니다"); }
+  });
+  $("#snapNow").onclick = async () => { await maybeSnapshot(true); toast("복구 지점을 만들었습니다"); closeDlg(); };
+}
+
+/* ==================== GitHub 연결 설정 ==================== */
+function openGHConfig() {
+  el.dlgTitle.textContent = "GitHub 연결";
+  el.dlgBody.innerHTML = `
+    <p class="cap" style="margin:0 0 14px;color:var(--text-2);font-size:13.5px;line-height:1.6">
+      기록을 GitHub 저장소의 JSON 파일 하나에 보관합니다. 기기끼리 자동으로 맞춰지고,
+      바뀔 때마다 커밋이 남아서 언제든 예전 상태로 돌아갈 수 있습니다.
+      토큰은 이 브라우저에만 저장하며 내보내는 파일에는 들어가지 않습니다.</p>
+    <label class="field"><span>저장소 (예: sohyungjin/music-data)</span>
+      <input id="ghRepo" value="${esc(gh.repo)}" placeholder="계정/저장소" autocapitalize="off" spellcheck="false"></label>
+    <div class="two">
+      <label class="field"><span>파일 경로</span><input id="ghPath" value="${esc(gh.path)}" placeholder="data.json" autocapitalize="off" spellcheck="false"></label>
+      <label class="field"><span>브랜치</span><input id="ghBranch" value="${esc(gh.branch)}" placeholder="main" autocapitalize="off" spellcheck="false"></label>
+    </div>
+    <label class="field"><span>액세스 토큰</span>
+      <input id="ghToken" type="password" value="${esc(gh.token)}" placeholder="github_pat_..." autocapitalize="off" spellcheck="false"></label>
+    <details style="margin:2px 0 14px">
+      <summary style="font-size:13px;color:var(--text-2);cursor:pointer">토큰 만드는 법</summary>
+      <div style="font-size:13px;color:var(--text-2);line-height:1.7;padding:8px 0 0">
+        1. GitHub에서 비공개 저장소를 하나 만듭니다 (README 포함으로 만들면 편합니다).<br>
+        2. Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token<br>
+        3. Repository access는 그 저장소 하나만 고르고, Permissions에서 <b>Contents</b>를 Read and write로 둡니다.<br>
+        4. 만들어진 토큰을 위에 붙여 넣습니다. 권한이 저장소 하나에만 있어서 새어도 피해가 작고, 언제든 취소할 수 있습니다.
+      </div>
+    </details>
+    <div class="rate-actions">
+      <button class="btn primary" id="ghSave">연결하고 동기화</button>
+      <button class="btn" id="ghTest">연결만 확인</button>
+      ${ghOn() ? `<button class="btn ghost del" id="ghOff" style="margin-left:auto">연결 끊기</button>` : ""}
+    </div>
+    <p class="hint" id="ghHint" style="margin-top:10px"></p>`;
+  const read = () => {
+    gh.repo = $("#ghRepo").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, "");
+    gh.path = $("#ghPath").value.trim() || "data.json";
+    gh.branch = $("#ghBranch").value.trim() || "main";
+    gh.token = $("#ghToken").value.trim();
+  };
+  const hint = (t) => { $("#ghHint").innerHTML = t; };
+  $("#ghTest").onclick = async () => {
+    read();
+    if (!gh.repo || !gh.token) return hint("저장소와 토큰을 모두 채워 주세요.");
+    hint(`<span class="spin"></span> 확인 중…`);
+    try {
+      const res = await ghFetch();
+      hint(res.missing
+        ? "연결됐습니다. 아직 파일이 없어서 처음 저장할 때 새로 만듭니다."
+        : `연결됐습니다. 저장소에 앨범 ${(res.data.albums || []).length}장 · 곡 ${(res.data.tracks || []).length}곡이 있습니다.`);
+    } catch (e) { hint("실패: " + e.message); }
+  };
+  $("#ghSave").onclick = async () => {
+    read();
+    if (!gh.repo || !gh.token) return hint("저장소와 토큰을 모두 채워 주세요.");
+    gh.sha = null; gh.lastSync = 0;
+    saveGH();
+    hint(`<span class="spin"></span> 동기화 중…`);
+    await pull(false);
+    setSave(statusText());
+    closeDlg();
+  };
+  if ($("#ghOff")) $("#ghOff").onclick = () => {
+    if (!confirm("연결을 끊을까요? 기록은 이 브라우저에 그대로 남고, 저장소 파일도 그대로 있습니다.")) return;
+    gh = { token: "", repo: "", path: "data.json", branch: "main", sha: null, lastSync: 0 };
+    saveGH(); setSave(statusText()); closeDlg(); toast("연결을 끊었습니다");
+  };
+  openDlg();
+}
+
+/* ==================== 이벤트 ==================== */
+$("#openAdd").onclick = openAdd;
+$("#sheetClose").onclick = closeSheet;
+$("#dlgClose").onclick = closeDlg;
+el.scrim.onclick = () => { closeDlg(); closeSheet(); };
+$("#q").addEventListener("input", (e) => { ui.q = e.target.value; render(); });
+$$("#topSeg button, .tabbar button").forEach(b => b.onclick = () => {
+  ui.view = b.dataset.view;
+  window.scrollTo({ top: 0 });
+  render();
+});
+$("#savechip").onclick = () => { if (ghOn()) pull(false); else openGHConfig(); };
+$("#savechip").style.cursor = "pointer";
+$("#menuBtn").onclick = (e) => { e.stopPropagation(); el.menu.classList.toggle("open"); };
+document.addEventListener("click", () => el.menu.classList.remove("open"));
+el.menu.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-act],[data-theme],[data-c]");
+  if (!t) return;
+  if (t.dataset.theme) { e.stopPropagation(); db.settings.theme = t.dataset.theme; applyTheme(); save(); render(); if (ui.sheet) renderSheet(); return; }
+  if (t.dataset.c) { e.stopPropagation(); db.settings.country = t.dataset.c; applyTheme(); save(); return; }
+  el.menu.classList.remove("open");
+  const act = t.dataset.act;
+  if (act === "json") exportJSON();
+  else if (act === "csv") exportCSV();
+  else if (act === "import") el.file.click();
+  else if (act === "snaps") openSnapshots();
+  else if (act === "sync") { if (ghOn()) pull(false); else openGHConfig(); }
+  else if (act === "ghcfg") openGHConfig();
+  else if (act === "glass") { db.settings.glass = !db.settings.glass; applyTheme(); save(); if (!db.settings.glass) document.body.style.setProperty("--tint", "transparent"); }
+});
+el.file.addEventListener("change", (e) => { const f = e.target.files[0]; if (f) readFile(f); e.target.value = ""; });
+
+let dragN = 0;
+window.addEventListener("dragenter", (e) => { e.preventDefault(); dragN++; el.drop.classList.add("show"); });
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("dragleave", () => { if (--dragN <= 0) el.drop.classList.remove("show"); });
+window.addEventListener("drop", (e) => {
+  e.preventDefault(); dragN = 0; el.drop.classList.remove("show");
+  const f = e.dataTransfer.files[0];
+  if (f) readFile(f);
+});
+
+document.addEventListener("keydown", (e) => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); undo(); return; }
+  if (e.key === "Escape") {
+    if (el.dlg.classList.contains("show")) closeDlg();
+    else if (ui.sheet) closeSheet();
+    else el.menu.classList.remove("open");
+    return;
+  }
+  if (typing) return;
+  if (e.key === "/") { e.preventDefault(); $("#q").focus(); }
+  else if (e.key.toLowerCase() === "n") { e.preventDefault(); openAdd(); }
+  else if (["1", "2", "3", "4"].includes(e.key)) {
+    ui.view = ["albums", "tracks", "artists", "stats"][+e.key - 1];
+    render();
+  }
+});
+window.addEventListener("beforeunload", (e) => {
+  if (dirty) { e.preventDefault(); e.returnValue = ""; }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { if (dirty) save(true); clearTimeout(pushT); push(); }
+  else if (ghOn() && now() - gh.lastSync > 20000) pull(true);
+});
+window.addEventListener("online", () => { if (ghOn()) pull(true); });
+
+/* ==================== 시작 ==================== */
+(async function init() {
+  applyTheme();
+  await loadAll();
+  applyTheme();
+  render();
+  if (!storageOK) toast("이 브라우저에 저장할 수 없습니다. 시크릿 모드라면 일반 창에서 열어 주세요.");
+  else if (!ghOn() && (db.albums.length || db.tracks.length)) setSave(statusText());
+})();
+</script>
