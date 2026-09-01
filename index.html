@@ -175,8 +175,9 @@ body.noglass .hero .wash,body.noglass .hero::after{display:none}
 .hero-art{width:132px;height:132px;flex:none;border-radius:12px;overflow:hidden;background:var(--sunken);box-shadow:0 10px 30px rgba(0,0,0,.28)}
 .hero-art img{width:100%;height:100%;object-fit:cover;display:block}
 .hero h1{font-size:25px;font-weight:680;letter-spacing:-.035em;line-height:1.18;margin:0 0 4px}
-.hero .who{font-size:15.5px;color:var(--accent);font-weight:530;cursor:pointer}
-.hero .who:hover{text-decoration:underline}
+.hero .who{font-size:15.5px;color:var(--accent);font-weight:530}
+.hero .who .wl{cursor:pointer}
+.hero .who .wl:hover{text-decoration:underline}
 .hero .facts{font-size:13px;color:var(--text-2);margin-top:5px}
 .review{width:100%;min-height:76px;background:var(--field);border:none;border-radius:12px;padding:11px 13px;font-size:14.5px;line-height:1.55;resize:vertical;outline:none}
 .review::placeholder{color:var(--text-3)}
@@ -422,7 +423,7 @@ const SNAP_KEYS = ["snap_0", "snap_1", "snap_2"];
 
 let db = {
   version: 2, albums: [], tracks: [], artists: [],
-  settings: { theme: "auto", glass: true, country: "KR", bayes: true, tidy: true }
+  settings: { theme: "auto", glass: true, country: "KR", bayes: true, tidy: true, doSplit: [] }
 };
 let ui = {
   view: "albums", q: "", albSort: "added", albFilter: "all",
@@ -471,8 +472,8 @@ function sd(a) {
 }
 
 /* 점수 → 색. 라이트/다크 각각의 정지점을 선형 보간한다. */
-const RAMP_L = [[0,[142,142,147]],[2.5,[214,124,60]],[4.5,[199,154,24]],[6,[121,166,60]],[7.5,[24,158,128]],[8.8,[10,148,158]],[10,[8,132,180]]];
-const RAMP_D = [[0,[152,152,157]],[2.5,[236,150,84]],[4.5,[226,184,60]],[6,[150,198,86]],[7.5,[62,204,172]],[8.8,[54,200,208]],[10,[72,182,236]]];
+const RAMP_L = [[0,[142,142,147]],[1.5,[201,98,84]],[3,[218,128,50]],[4.3,[206,160,22]],[5.5,[168,168,40]],[6.6,[100,172,80]],[7.6,[26,166,146]],[8.6,[10,158,186]],[9.3,[0,158,214]],[10,[0,170,228]]];
+const RAMP_D = [[0,[152,152,157]],[1.5,[240,124,108]],[3,[244,160,72]],[4.3,[238,198,58]],[5.5,[204,216,76]],[6.6,[130,216,104]],[7.6,[52,216,184]],[8.6,[44,220,230]],[9.3,[70,224,250]],[10,[110,236,255]]];
 function hue(v) {
   if (!isNum(v)) return "var(--text-3)";
   const R = document.documentElement.dataset.theme === "dark" ? RAMP_D : RAMP_L;
@@ -732,8 +733,10 @@ function undo() {
 function normalize(d) {
   const out = {
     version: 2, albums: [], tracks: [], artists: [],
-    settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true, tidy: true }, (d && d.settings) || {})
+    settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true, tidy: true, doSplit: [] }, (d && d.settings) || {})
   };
+  if (!Array.isArray(out.settings.doSplit)) out.settings.doSplit = [];
+  delete out.settings.noSplit;
   const albums = Array.isArray(d) ? d : ((d && d.albums) || []);
   for (const a of albums) {
     const id = a.id || uid("a");
@@ -786,6 +789,38 @@ function trackAvg(id) {
   const v = albumTracks(id).map(t => t.rating).filter(isNum);
   return v.length ? r1(mean(v)) : null;
 }
+/* 협업 표기 처리. 기본은 표기 그대로 한 아티스트로 취급하고,
+   아티스트 화면에서 "참여자별로 나누기"를 누른 이름만 나눈다.
+   (자동으로 나누면 Tyler, The Creator 같은 예명이 소리 없이 쪼개진다.) */
+const CRED_RE = /\s*(?:,|&|×|✕)\s*|\s+(?:x|feat\.?|ft\.?|featuring|with)\s+/i;
+function splitName(name) {
+  const base = String(name || "").replace(/[()\[\]]/g, " ");
+  const seen = new Set(), out = [];
+  for (const part of base.split(CRED_RE)) {
+    const t = (part || "").trim();
+    if (!t) continue;
+    const k = akey(t);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(t);
+  }
+  return out;
+}
+function creditsOf(name) {
+  const raw = String(name || "").trim();
+  if (!raw) return [];
+  if (!(db.settings.doSplit || []).includes(akey(raw))) return [raw];
+  const out = splitName(raw);
+  return out.length > 1 ? out : [raw];
+}
+function creditLinks(name) {
+  return creditsOf(name).map(n =>
+    `<span class="wl" data-k="${esc(akey(n))}">${esc(n)}</span>`
+  ).join(`<span style="color:var(--text-3);font-weight:400"> · </span>`);
+}
+function bindCredits() {
+  $$(".wl", el.sheetBody).forEach(b => b.onclick = () => { if (b.dataset.k) openSheet("artist", b.dataset.k); });
+}
 function artistList() {
   const map = new Map();
   const touch = (name) => {
@@ -794,8 +829,11 @@ function artistList() {
     if (!map.has(k)) map.set(k, { key: k, name, albums: [], tracks: [] });
     return map.get(k);
   };
-  for (const a of db.albums) { const e = touch(a.artist); if (e) e.albums.push(a); }
-  for (const t of db.tracks) { const e = touch(t.artist || (album(t.albumId) || {}).artist); if (e) e.tracks.push(t); }
+  for (const a of db.albums) for (const n of creditsOf(a.artist)) { const e = touch(n); if (e) e.albums.push(a); }
+  for (const t of db.tracks) {
+    const nm = t.artist || (album(t.albumId) || {}).artist;
+    for (const n of creditsOf(nm)) { const e = touch(n); if (e) e.tracks.push(t); }
+  }
   const out = [];
   for (const e of map.values()) {
     const ar = e.albums.map(a => a.rating).filter(isNum);
@@ -1354,7 +1392,7 @@ function renderAlbumSheet() {
         <div class="hero-art">${artHTML(a)}</div>
         <div style="min-width:0">
           <h1>${esc(dispT(a.title))}</h1>
-          <div class="who" id="toArtist">${esc(a.artist)}</div>
+          <div class="who">${creditLinks(a.artist)}</div>
           <div class="facts">${[a.year, a.genre, ts.length ? ts.length + "곡" : ""].filter(Boolean).map(esc).join(" · ")}</div>
         </div>
       </div>
@@ -1419,7 +1457,7 @@ function renderAlbumSheet() {
   $("#clearRate").onclick = () => applyAlbum(null);
   if ($("#useAvg")) $("#useAvg").onclick = () => applyAlbum(trackAvg(a.id));
   $("#albRev").addEventListener("input", (e) => { a.review = e.target.value; save(); });
-  $("#toArtist").onclick = () => { if (akey(a.artist)) openSheet("artist", akey(a.artist)); };
+  bindCredits();
 
   $("#addTrack").onclick = () => {
     const name = prompt("곡 제목");
@@ -1537,7 +1575,9 @@ function renderTrackSheet() {
   const cov = a ? a.cover : "";
   tintFrom(cov);
   const sibs = a ? albumTracks(a.id) : [];
-  const sameArtist = db.tracks.filter(x => x.artistKey === t.artistKey && isNum(x.rating) && x.id !== t.id)
+  const myCred = creditsOf(t.artist).map(akey);
+  const sameArtist = db.tracks.filter(x => x.id !== t.id && isNum(x.rating)
+    && creditsOf(x.artist || (album(x.albumId) || {}).artist).map(akey).some(k => myCred.includes(k)))
     .sort((x, y) => y.rating - x.rating);
   const rank = sameArtist.filter(x => x.rating > (t.rating ?? -1)).length + 1;
   el.sheetBody.innerHTML = `
@@ -1547,7 +1587,7 @@ function renderTrackSheet() {
         <div class="hero-art" style="${cov ? "" : `background:${fauxCover(t.title, t.artist)}`}">${cov ? `<img src="${esc(cov)}" alt="">` : ""}</div>
         <div style="min-width:0">
           <h1>${esc(t.title)}</h1>
-          <div class="who" id="toArtist">${esc(t.artist)}</div>
+          <div class="who">${creditLinks(t.artist)}</div>
           <div class="facts">${[a ? dispT(a.title) : (t.album || "싱글"), dur(t.ms), a && a.year ? a.year : ""].filter(Boolean).map(esc).join(" · ")}</div>
         </div>
       </div>
@@ -1607,7 +1647,7 @@ function renderTrackSheet() {
   bindScore(bigv, () => t.rating, (v) => apply(v, "big"));
   $("#clearRate").onclick = () => apply(null);
   $("#trkRev").addEventListener("input", (e) => { t.review = e.target.value; save(); });
-  $("#toArtist").onclick = () => { if (t.artistKey) openSheet("artist", t.artistKey); };
+  bindCredits();
   if ($("#toAlbum")) $("#toAlbum").onclick = () => openSheet("album", t.albumId);
   $$(".sec .lrow").forEach(r => r.onclick = () => { if (r.dataset.id !== t.id) openSheet("track", r.dataset.id); });
   $("#renameTrack").onclick = () => {
@@ -1683,6 +1723,8 @@ function renderArtistSheet() {
           <span class="sc" style="color:${hue(t.rating)}">${fmt(t.rating)}</span></div>`).join("")}</div>
     </div>` : ""}
 
+    ${collabSecHTML(a)}
+
     <div class="sec">
       <h3>아티스트 메모</h3>
       <textarea class="review" id="artNote" placeholder="이 아티스트에 대한 생각">${esc(a.note)}</textarea>
@@ -1701,8 +1743,44 @@ function renderArtistSheet() {
   bindScore(bigv, () => { const x = artistByKey(a.key); return isNum(x.own) ? x.own : null; }, (v) => apply(v));
   if ($("#clearOwn")) $("#clearOwn").onclick = () => { setArtistMeta(a.key, a.name, { rating: null }); save(); renderSheet(); };
   $("#artNote").addEventListener("input", (e) => { setArtistMeta(a.key, a.name, { note: e.target.value }); save(); });
+  if ($("#nsSplit")) $("#nsSplit").onclick = () => {
+    db.settings.doSplit.push(a.key);
+    save(); render();
+    const first = splitName(a.name)[0];
+    openSheet("artist", akey(first));
+    toast(`"${a.name}"을(를) 참여자별로 나눴습니다`);
+  };
+  $$(".nsJoin").forEach(b => b.onclick = () => {
+    db.settings.doSplit = db.settings.doSplit.filter(k => k !== b.dataset.k);
+    save(); render(); renderSheet();
+    toast(`"${b.dataset.n}"을(를) 다시 한 팀으로 집계합니다`);
+  });
   $$(".discog .card").forEach(c => c.onclick = () => openSheet("album", c.dataset.aid));
   $$(".rank[data-tid]").forEach(r => r.onclick = () => openSheet("track", r.dataset.tid));
+}
+
+function collabSecHTML(a) {
+  const parts = splitName(a.name);
+  const canSplit = parts.length > 1 && !(db.settings.doSplit || []).includes(a.key);
+  // 이 아티스트가 참여자로 등장하는, 이미 나눠 둔 결합 이름들
+  const splitRaws = new Set();
+  for (const t of a.tracks) {
+    const nm = (t.artist || (album(t.albumId) || {}).artist || "").trim();
+    if (nm && akey(nm) !== a.key && (db.settings.doSplit || []).includes(akey(nm))) splitRaws.add(nm);
+  }
+  for (const x of a.albums) {
+    const nm = (x.artist || "").trim();
+    if (nm && akey(nm) !== a.key && (db.settings.doSplit || []).includes(akey(nm))) splitRaws.add(nm);
+  }
+  if (!canSplit && !splitRaws.size) return "";
+  return `<div class="sec">
+    <h3>협업 크레딧</h3>
+    ${canSplit ? `<p class="hint" style="margin:0 0 8px">협업 표기라면 나눠서 각 아티스트에게 집계할 수 있습니다. 팀 예명이라면 그대로 두세요.</p>
+    <div class="cmprow" style="align-items:center"><span>${esc(a.name)}</span>
+      <button class="btn" id="nsSplit">참여자별로 나누기 (${parts.map(esc).join(" · ")})</button></div>` : ""}
+    ${[...splitRaws].map(r => `<div class="cmprow" style="align-items:center"><span>${esc(r)} — 나눠서 집계 중</span>
+      <button class="btn nsJoin" data-k="${esc(akey(r))}" data-n="${esc(r)}">다시 한 팀으로</button></div>`).join("")}
+  </div>`;
 }
 
 /* ==================== 차트 ==================== */
@@ -1998,9 +2076,9 @@ function renderAdd() {
   const s = addState;
   el.dlgBody.innerHTML = `
     ${s.editing ? "" : `<div class="seg sm" id="addSeg" style="margin-bottom:14px">
-      <button data-t="album">앨범 검색</button><button data-t="song">곡 검색</button><button data-t="manual">직접 입력</button>
+      <button data-t="album">앨범 검색</button><button data-t="song">곡 검색</button><button data-t="bulk">여러 장</button><button data-t="manual">직접 입력</button>
     </div>`}
-    ${s.tab === "manual" ? manualHTML(s.editing) : `
+    ${s.tab === "manual" ? manualHTML(s.editing) : s.tab === "bulk" ? bulkHTML() : `
       <div class="searchbox" style="flex:1;max-width:none">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
         <input id="sq" placeholder="${s.tab === "song" ? "곡명 또는 아티스트" : "앨범명 또는 아티스트"}" autocomplete="off">
@@ -2016,6 +2094,7 @@ function renderAdd() {
     b.onclick = () => { s.tab = b.dataset.t; s.results = []; s.err = ""; renderAdd(); setTimeout(() => $("#sq") && $("#sq").focus(), 40); };
   });
   if (s.tab === "manual") return bindManual();
+  if (s.tab === "bulk") return bindBulk();
   $("#goSearch").onclick = doSearch;
   $("#sq").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
   bindResults();
@@ -2082,9 +2161,9 @@ async function addFromResult(r, btn) {
     const t = mkTrack({ title: r.title, ms: r.ms, no: r.no, disc: r.disc, album: r.album }, null, r.artist, 0);
     db.tracks.push(t);
     save(); render();
-    lab.textContent = "완료";
-    toast(`${r.title} 추가`);
-    setTimeout(() => { closeDlg(); openSheet("track", t.id); }, 280);
+    lab.textContent = "열기";
+    btn.onclick = () => { closeDlg(); openSheet("track", t.id); };
+    toast(`${r.title} 추가 — 계속 검색해서 더 담을 수 있습니다`);
     return;
   }
   const dup = db.albums.find(a => akey(a.title) === akey(r.title) && a.artistKey === akey(r.artist));
@@ -2107,9 +2186,74 @@ async function addFromResult(r, btn) {
     msg += " · 수록곡 조회 실패, 앨범에서 다시 가져오세요";
   }
   save(); render();
-  lab.textContent = "완료";
-  toast(msg);
-  setTimeout(() => { closeDlg(); openSheet("album", a.id); }, 280);
+  lab.textContent = "열기";
+  btn.onclick = () => { closeDlg(); openSheet("album", a.id); };
+  toast(msg + " — 계속 검색해서 더 담을 수 있습니다");
+}
+function bulkHTML() {
+  return `
+    <p class="cap" style="margin:0 0 10px;color:var(--text-2);font-size:13.5px">
+      한 줄에 한 장씩 적으세요. 아티스트와 앨범명을 같이 적으면 정확하게 잡힙니다.
+      각 줄의 첫 번째 검색 결과를 수록곡까지 담습니다.</p>
+    <textarea class="review" id="bulkIn" style="min-height:160px;font-size:14.5px" placeholder="키키 WhyKiiiKiii
+한로로 이상비행
+Radiohead OK Computer"></textarea>
+    <div class="rate-actions" style="margin-top:10px">
+      <button class="btn primary" id="bulkGo">모두 추가</button>
+      <span class="hint" id="bulkHint">호출 제한 때문에 한 장에 1초쯤 걸립니다</span>
+    </div>
+    <div id="bulkOut" style="margin-top:8px"></div>`;
+}
+function bindBulk() {
+  $("#bulkGo").onclick = runBulk;
+}
+async function runBulk() {
+  const lines = ($("#bulkIn").value || "").split("\n").map(x => x.trim()).filter(Boolean);
+  if (!lines.length) return;
+  const go = $("#bulkGo"), hint = $("#bulkHint"), out = $("#bulkOut");
+  go.disabled = true;
+  out.innerHTML = lines.map((l, i) => `<div class="cmprow" style="align-items:center">
+    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${esc(l)}</span>
+    <b id="bk${i}" style="white-space:nowrap;font-weight:550;color:var(--text-2)">대기</b></div>`).join("");
+  mark("여러 장 추가");
+  let added = 0, skip = 0, failN = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const st = $("#bk" + i);
+    hint.textContent = `${i + 1} / ${lines.length} 진행 중…`;
+    st.textContent = "검색 중…";
+    try {
+      const hits = await searchAlbums(lines[i], db.settings.country);
+      if (!hits.length) { st.textContent = "못 찾음"; failN++; continue; }
+      const r = hits[0];
+      if (db.albums.find(x => akey(x.title) === akey(r.title) && x.artistKey === akey(r.artist))) {
+        st.textContent = "이미 있음"; skip++; continue;
+      }
+      const a = {
+        id: uid("a"), title: r.title, artist: r.artist, artistKey: akey(r.artist),
+        year: r.year, genre: r.genre, cover: r.cover, appleId: r.appleId,
+        rating: null, review: "", added: now(), ratedAt: null
+      };
+      db.albums.push(a);
+      st.textContent = "수록곡…";
+      try {
+        const ts = await fetchTracks(r.appleId, db.settings.country, { title: r.title, artist: r.artist });
+        ts.forEach((t, j) => db.tracks.push(mkTrack(t, a.id, a.artist, j)));
+        st.textContent = `추가됨 · ${ts.length}곡`;
+      } catch (e) {
+        st.textContent = "추가됨 · 곡은 앨범에서 다시";
+      }
+      st.style.color = "var(--accent)";
+      added++;
+      save();
+    } catch (e) {
+      st.textContent = "실패"; failN++;
+    }
+    if (i < lines.length - 1) await new Promise(r => setTimeout(r, 900));
+  }
+  go.disabled = false;
+  render();
+  hint.textContent = `완료 — 추가 ${added} · 이미 있음 ${skip} · 실패 ${failN}`;
+  toast(`앨범 ${added}장을 추가했습니다`);
 }
 function manualHTML(a) {
   return `
