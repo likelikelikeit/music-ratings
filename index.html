@@ -993,6 +993,22 @@ function mapSongRows(rows) {
     .sort((a, b) => ((a.discNumber || 1) - (b.discNumber || 1)) || ((a.trackNumber || 0) - (b.trackNumber || 0)))
     .map((r, i) => ({ no: r.trackNumber || i + 1, disc: r.discNumber || 1, title: r.trackName || "제목 없음", ms: r.trackTimeMillis || 0 }));
 }
+/* 앨범 색인에는 안 잡히는데 곡은 잡히는 앨범이 있다 (인디·믹스테이프에서 잦음).
+   곡 검색 결과를 collectionId로 묶어 앨범 후보로 되돌린다. */
+async function albumsFromSongs(term, country) {
+  const d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=50&country=${country}`);
+  const by = new Map();
+  for (const r of (d.results || [])) {
+    if (r.wrapperType !== "track" || r.kind === "music-video" || !r.collectionId) continue;
+    if (!by.has(r.collectionId)) by.set(r.collectionId, {
+      appleId: r.collectionId, title: r.collectionName || "",
+      artist: r.collectionArtistName || r.artistName || "",
+      year: (r.releaseDate || "").slice(0, 4), genre: r.primaryGenreName || "",
+      cover: big(r.artworkUrl100), n: r.trackCount || 0
+    });
+  }
+  return [...by.values()].filter(a => a.title);
+}
 async function fetchTracks(appleId, country, hint) {
   // 1) lookup. limit 상한은 200이고, 스토어가 안 맞으면 빈 결과가 오므로 국가를 빼고도 시도한다.
   const urls = [
@@ -2101,7 +2117,9 @@ function renderAdd() {
 }
 function resultsHTML() {
   const s = addState;
-  if (!s.results.length) return "";
+  const more = (s.tab === "album" && !s.derived && s.term)
+    ? `<button class="btn ghost" id="viaSongs" style="margin-top:10px;color:var(--text-2)">찾는 앨범이 안 보이나요? 곡 검색을 통해 찾아보기</button>` : "";
+  if (!s.results.length) return more;
   return `<div class="res">` + s.results.map((r, i) => `
     <button class="rescard" data-i="${i}">
       ${r.cover ? `<img src="${esc(r.cover)}" alt="" loading="lazy">` : `<span style="width:48px;height:48px;border-radius:7px;background:${fauxCover(r.title, r.artist)}"></span>`}
@@ -2110,20 +2128,45 @@ function resultsHTML() {
         <span class="s">${[r.artist, r.year, r.kind === "song" ? r.album : (r.n ? r.n + "곡" : "")].filter(Boolean).map(esc).join(" · ")}</span>
       </span>
       <span class="add">추가</span>
-    </button>`).join("") + `</div>`;
+    </button>`).join("") + `</div>` + more;
 }
 function bindResults() {
   $$("#resWrap .rescard").forEach(b => b.onclick = () => addFromResult(addState.results[+b.dataset.i], b));
+  const vs = $("#viaSongs");
+  if (vs) vs.onclick = async () => {
+    const s = addState;
+    vs.innerHTML = `<span class="spin"></span> 곡 검색 중…`;
+    try {
+      const extra = await albumsFromSongs(s.term, db.settings.country);
+      const have = new Set(s.results.map(r => r.appleId));
+      const fresh = extra.filter(r => !have.has(r.appleId));
+      s.results = s.results.concat(fresh);
+      s.derived = true;
+      $("#sHint").textContent = fresh.length ? `곡 검색을 통해 앨범 ${fresh.length}장을 더 찾았습니다.` : "곡 검색으로도 더 찾지 못했습니다.";
+    } catch (e) {
+      $("#sHint").textContent = "곡 검색도 실패했습니다.";
+    }
+    $("#resWrap").innerHTML = resultsHTML();
+    bindResults();
+  };
 }
 async function doSearch() {
   const s = addState;
   const term = ($("#sq").value || "").trim();
   if (!term) return;
-  s.busy = true; s.err = ""; s.results = [];
+  s.busy = true; s.err = ""; s.results = []; s.derived = false; s.term = term;
   $("#sHint").innerHTML = `<span class="spin"></span> 찾는 중…`;
   try {
-    s.results = s.tab === "song" ? await searchSongs(term, db.settings.country) : await searchAlbums(term, db.settings.country);
-    s.err = s.results.length ? "" : "검색 결과가 없습니다";
+    if (s.tab === "song") {
+      s.results = await searchSongs(term, db.settings.country);
+    } else {
+      s.results = await searchAlbums(term, db.settings.country);
+      if (!s.results.length) {
+        s.results = await albumsFromSongs(term, db.settings.country);
+        s.derived = s.results.length > 0;
+      }
+    }
+    s.err = s.results.length ? (s.derived ? "앨범 색인에 없어서 곡 검색을 통해 찾았습니다." : "") : "검색 결과가 없습니다";
     itunesBlocked = false;
   } catch (e) {
     itunesBlocked = true;
