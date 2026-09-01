@@ -113,26 +113,27 @@ select.sel{background:var(--field);border:none;border-radius:9px;padding:6px 10p
 .card:active .art{transform:translateY(-1px) scale(.985)}
 .art img{width:100%;height:100%;object-fit:cover;display:block}
 .art .ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#fff;text-align:center;padding:10px;line-height:1.25;letter-spacing:-.02em;text-shadow:0 1px 3px rgba(0,0,0,.3)}
-.badge{position:absolute;right:7px;bottom:7px;min-width:38px;height:24px;padding:0 7px;border-radius:8px;display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;color:#fff;letter-spacing:-.02em;
-  background:rgba(0,0,0,.42);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:inset 0 .5px 0 rgba(255,255,255,.4)}
-.badge.none{color:rgba(255,255,255,.75)}
+.badge{position:absolute;right:7px;bottom:7px;min-width:40px;height:25px;padding:0 8px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--elev) 82%,transparent);-webkit-backdrop-filter:blur(12px) saturate(160%);backdrop-filter:blur(12px) saturate(160%);
+  box-shadow:0 1px 6px rgba(0,0,0,.22),inset 0 0 0 .5px rgba(255,255,255,.35)}
+.badge .v{font-size:13px;font-weight:720;font-variant-numeric:tabular-nums;letter-spacing:-.03em;color:var(--bc,var(--text-3))}
+.badge.none{opacity:.65}
+.badge.none .v{font-weight:500;color:var(--text-3)}
 .meta{padding:9px 2px 0}
 .meta .t{font-size:14px;font-weight:550;letter-spacing:-.02em;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .meta .a{font-size:13px;color:var(--text-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ============ 점수 컨트롤 ============ */
-.score{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:54px;height:29px;padding:0 9px;
-  border-radius:9px;background:var(--field);font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.02em;
-  cursor:ew-resize;touch-action:pan-y;user-select:none;-webkit-user-select:none;overflow:hidden;
-  transition:transform .12s cubic-bezier(.2,.7,.3,1),box-shadow .15s}
-.score .fill{position:absolute;left:0;top:0;bottom:0;background:currentColor;opacity:.15;transition:width .1s linear}
-.score .v{position:relative;z-index:1}
-.score.set{box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 26%,transparent)}
-.score.dragging{transform:scale(1.08);box-shadow:0 2px 10px color-mix(in srgb,currentColor 30%,transparent)}
-.score:hover .fill{opacity:.22}
-.score input{position:absolute;inset:0;width:100%;height:100%;border:none;background:var(--elev);text-align:center;
-  font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;outline:none;z-index:2;padding:0}
+.score{position:relative;display:inline-flex;align-items:center;justify-content:center;min-width:50px;height:29px;padding:0 8px;flex:none;
+  border-radius:9px;font-size:14.5px;font-weight:680;font-variant-numeric:tabular-nums;letter-spacing:-.03em;
+  cursor:ew-resize;touch-action:pan-y;user-select:none;-webkit-user-select:none;
+  transition:transform .12s cubic-bezier(.2,.7,.3,1),background .15s}
+.score:not(.set){color:var(--text-3);font-weight:500}
+.score:hover{background:var(--chip)}
+.score.dragging{transform:scale(1.1);background:var(--chip)}
+.score input{position:absolute;inset:0;width:100%;height:100%;border:none;border-radius:9px;background:var(--elev);text-align:center;
+  font-size:14.5px;font-weight:680;font-variant-numeric:tabular-nums;outline:none;z-index:2;padding:0;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}
 .rangewrap{position:relative;display:flex;align-items:center;height:30px;flex:1;min-width:100px}
 input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:var(--rt,var(--field));outline:none;margin:0;touch-action:pan-y}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;cursor:grab;
@@ -160,15 +161,17 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-ra
 .sheet{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:var(--elev);z-index:80;box-shadow:var(--sh-3);
   transform:translateX(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.show{transform:none}
-.sheet-close{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;padding:12px 16px;background:linear-gradient(var(--elev) 55%,transparent)}
+.sheet-close{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;padding:12px 16px;pointer-events:none}
+.sheet-close .btn{pointer-events:auto;background:color-mix(in srgb,var(--elev) 55%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .sheet-body{padding:0 26px 60px}
 .sec{padding:20px 0;border-top:.5px solid var(--sep)}
 .sec:first-of-type{border-top:none}
 .sec h3{font-size:12.5px;font-weight:600;color:var(--text-2);margin:0 0 10px;letter-spacing:-.01em}
-.hero{position:relative;margin:-52px -26px 0;padding:60px 26px 22px;overflow:hidden}
-.hero .wash{position:absolute;inset:-30% -10% auto;height:190%;width:120%;object-fit:cover;filter:blur(56px) saturate(210%);opacity:.5;transform:scale(1.2)}
-body.noglass .hero .wash{display:none}
-.hero-row{position:relative;display:flex;gap:18px;align-items:flex-end}
+.hero{position:relative;margin:-52px -26px 0;padding:64px 26px 26px;overflow:hidden}
+.hero .wash{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(64px) saturate(190%);opacity:.6;transform:scale(1.9)}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 0%,transparent 46%,var(--elev) 100%)}
+body.noglass .hero .wash,body.noglass .hero::after{display:none}
+.hero-row{position:relative;z-index:1;display:flex;gap:18px;align-items:flex-end}
 .hero-art{width:132px;height:132px;flex:none;border-radius:12px;overflow:hidden;background:var(--sunken);box-shadow:0 10px 30px rgba(0,0,0,.28)}
 .hero-art img{width:100%;height:100%;object-fit:cover;display:block}
 .hero h1{font-size:25px;font-weight:680;letter-spacing:-.035em;line-height:1.18;margin:0 0 4px}
@@ -195,7 +198,7 @@ body.noglass .hero .wash{display:none}
 .mark:hover{background:var(--chip-h)}
 
 /* ============ 곡 테이블 ============ */
-.thead,.lrow{display:grid;grid-template-columns:34px 1fr 1.1fr 62px 76px;gap:12px;align-items:center}
+.thead,.lrow{display:grid;grid-template-columns:34px 1fr 1.1fr 62px 48px;gap:12px;align-items:center}
 .thead{padding:0 10px 8px;font-size:12px;color:var(--text-3);border-bottom:.5px solid var(--sep);position:sticky;top:53px;background:var(--bg);z-index:5}
 .thead button{font-size:12px;color:var(--text-3);text-align:left}
 .thead button.on{color:var(--text)}
@@ -304,7 +307,7 @@ body.noglass .tabbar{background:var(--elev)}
   .hero-art{width:104px;height:104px}
   .hero h1{font-size:22px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:18px 14px}
-  .thead,.lrow{grid-template-columns:1fr 68px;gap:8px}
+  .thead,.lrow{grid-template-columns:1fr 44px;gap:8px}
   .thead .h-idx,.thead .h-sub,.thead .h-dur,.lrow .idx,.lrow .sub,.lrow .dur{display:none}
   .lrow .sub2{display:block;font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .thead{top:47px}
@@ -346,6 +349,7 @@ body.noglass .tabbar{background:var(--elev)}
           </div>
         </div>
         <button data-act="glass"><span id="glassLabel">유리 효과 끄기</span></button>
+        <button data-act="tidy"><span id="tidyLabel">‘- EP’ 꼬리표 감추기</span></button>
         <div class="div"></div>
         <div class="lab">데이터</div>
         <button data-act="json">JSON으로 내보내기</button>
@@ -418,7 +422,7 @@ const SNAP_KEYS = ["snap_0", "snap_1", "snap_2"];
 
 let db = {
   version: 2, albums: [], tracks: [], artists: [],
-  settings: { theme: "auto", glass: true, country: "KR", bayes: true }
+  settings: { theme: "auto", glass: true, country: "KR", bayes: true, tidy: true }
 };
 let ui = {
   view: "albums", q: "", albSort: "added", albFilter: "all",
@@ -467,8 +471,8 @@ function sd(a) {
 }
 
 /* 점수 → 색. 라이트/다크 각각의 정지점을 선형 보간한다. */
-const RAMP_L = [[0,[142,142,147]],[2.5,[214,124,60]],[4.5,[201,152,20]],[6,[150,164,44]],[7.5,[52,152,84]],[8.8,[24,152,104]],[10,[10,145,120]]];
-const RAMP_D = [[0,[152,152,157]],[2.5,[236,150,84]],[4.5,[228,182,52]],[6,[178,196,70]],[7.5,[86,196,116]],[8.8,[56,200,140]],[10,[46,196,164]]];
+const RAMP_L = [[0,[142,142,147]],[2.5,[214,124,60]],[4.5,[199,154,24]],[6,[121,166,60]],[7.5,[24,158,128]],[8.8,[10,148,158]],[10,[8,132,180]]];
+const RAMP_D = [[0,[152,152,157]],[2.5,[236,150,84]],[4.5,[226,184,60]],[6,[150,198,86]],[7.5,[62,204,172]],[8.8,[54,200,208]],[10,[72,182,236]]];
 function hue(v) {
   if (!isNum(v)) return "var(--text-3)";
   const R = document.documentElement.dataset.theme === "dark" ? RAMP_D : RAMP_L;
@@ -479,6 +483,14 @@ function hue(v) {
   const c = c0.map((n, k) => Math.round(n + (c1[k] - n) * t));
   return `rgb(${c[0]} ${c[1]} ${c[2]})`;
 }
+/* '- EP' 같은 꼬리표를 화면에서만 뗀다. 데이터·검색·내보내기에는 원래 제목이 남는다. */
+const TIDY_TAIL = /\s*[-–—]\s*(EP|Single)\s*$/i;
+function dispT(title) {
+  if (!db.settings.tidy) return title;
+  const t = String(title || "").replace(TIDY_TAIL, "").trim();
+  return t || title;
+}
+
 /* 커버 없는 앨범용 결정론적 그라데이션 */
 function seedHue(str) {
   let h = 0;
@@ -720,7 +732,7 @@ function undo() {
 function normalize(d) {
   const out = {
     version: 2, albums: [], tracks: [], artists: [],
-    settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true }, (d && d.settings) || {})
+    settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true, tidy: true }, (d && d.settings) || {})
   };
   const albums = Array.isArray(d) ? d : ((d && d.albums) || []);
   for (const a of albums) {
@@ -811,18 +823,16 @@ function setArtistMeta(key, name, patch) {
    - 짧게 탭     → 숫자 입력 + (곡이면) 아래 슬라이더 펼침
    - 세로 스크롤은 touch-action:pan-y 로 살려 둔다.
 */
-function scoreHTML(v, cls) {
-  const c = hue(v);
-  const w = isNum(v) ? (v / 10) * 100 : 0;
-  return `<span class="score ${isNum(v) ? "set" : ""} ${cls || ""}" style="color:${c}" tabindex="0" role="slider"
-    aria-valuemin="0" aria-valuemax="10" aria-valuenow="${isNum(v) ? v : ""}" aria-label="점수">
-    <span class="fill" style="width:${w}%"></span><span class="v">${isNum(v) ? fmt(v) : "–"}</span></span>`;
+function scoreHTML(v, opt) {
+  opt = opt || {};
+  const inert = opt.inert ? "pointer-events:none;" : "";
+  const focus = opt.inert ? "" : `tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${isNum(v) ? v : ""}" aria-label="점수"`;
+  return `<span class="score ${isNum(v) ? "set" : ""}" style="${inert}color:${hue(v)}" ${focus}><span class="v">${isNum(v) ? fmt(v) : "–"}</span></span>`;
 }
 function paintScore(node, v) {
   node.style.color = hue(v);
   node.classList.toggle("set", isNum(v));
-  const f = $(".fill", node), t = $(".v", node);
-  if (f) f.style.width = (isNum(v) ? (v / 10) * 100 : 0) + "%";
+  const t = $(".v", node);
   if (t) t.textContent = isNum(v) ? fmt(v) : "–";
   node.setAttribute("aria-valuenow", isNum(v) ? v : "");
 }
@@ -939,8 +949,14 @@ async function searchSongs(term, country) {
     cover: big(r.artworkUrl100), ms: r.trackTimeMillis || 0, no: r.trackNumber || 1, disc: r.discNumber || 1
   }));
 }
-async function fetchTracks(appleId, country) {
-  // lookup 의 limit 상한은 200. 스토어가 안 맞으면 빈 결과가 오므로 국가를 빼고 다시 시도한다.
+function mapSongRows(rows) {
+  return rows
+    .filter(r => (r.wrapperType === "track" || r.kind === "song") && r.kind !== "music-video")
+    .sort((a, b) => ((a.discNumber || 1) - (b.discNumber || 1)) || ((a.trackNumber || 0) - (b.trackNumber || 0)))
+    .map((r, i) => ({ no: r.trackNumber || i + 1, disc: r.discNumber || 1, title: r.trackName || "제목 없음", ms: r.trackTimeMillis || 0 }));
+}
+async function fetchTracks(appleId, country, hint) {
+  // 1) lookup. limit 상한은 200이고, 스토어가 안 맞으면 빈 결과가 오므로 국가를 빼고도 시도한다.
   const urls = [
     `https://itunes.apple.com/lookup?id=${appleId}&entity=song&limit=200&country=${country}`,
     `https://itunes.apple.com/lookup?id=${appleId}&entity=song&limit=200`,
@@ -950,11 +966,36 @@ async function fetchTracks(appleId, country) {
   for (const u of urls) {
     let d;
     try { d = await apiGet(u); } catch (e) { last = e; continue; }
-    const ts = (d.results || [])
-      .filter(r => r.wrapperType === "track" && r.kind !== "music-video")
-      .sort((a, b) => ((a.discNumber || 1) - (b.discNumber || 1)) || ((a.trackNumber || 0) - (b.trackNumber || 0)))
-      .map((r, i) => ({ no: r.trackNumber || i + 1, disc: r.discNumber || 1, title: r.trackName || "제목 없음", ms: r.trackTimeMillis || 0 }));
+    const ts = mapSongRows(d.results || []);
     if (ts.length) return ts;
+  }
+  // 2) lookup이 곡을 빼먹는 앨범이 있다(주로 갓 나온 앨범).
+  //    곡 검색으로 받아서 앨범 id로 골라낸다. id가 안 맞으면 앨범명으로 맞춘다.
+  if (hint && (hint.title || hint.artist)) {
+    const term = ((hint.artist || "") + " " + (hint.title || "")).trim();
+    const tKey = akey(hint.title || "");
+    for (const c of [country, null]) {
+      let d;
+      try {
+        d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=50${c ? `&country=${c}` : ""}`);
+      } catch (e) { last = e; continue; }
+      const rows = (d.results || []);
+      let mine = rows.filter(r => r.collectionId === appleId);
+      if (!mine.length && tKey) {
+        mine = rows.filter(r => {
+          const ck = akey(r.collectionName || "");
+          return ck && (ck === tKey || ck.startsWith(tKey) || tKey.startsWith(ck));
+        });
+        // 앨범명 매칭일 때는 한 앨범(가장 많이 잡힌 collectionId)만 남긴다.
+        const cnt = new Map();
+        for (const r of mine) cnt.set(r.collectionId, (cnt.get(r.collectionId) || 0) + 1);
+        let bestId = null, bestN = 0;
+        for (const [id, n] of cnt) if (n > bestN) { bestId = id; bestN = n; }
+        mine = mine.filter(r => r.collectionId === bestId);
+      }
+      const ts = mapSongRows(mine);
+      if (ts.length) return ts;
+    }
   }
   if (last) throw last;
   return [];
@@ -1029,6 +1070,7 @@ function applyTheme() {
   document.body.classList.toggle("glass", !!db.settings.glass);
   document.body.classList.toggle("noglass", !db.settings.glass);
   $("#glassLabel").textContent = db.settings.glass ? "유리 효과 끄기" : "유리 효과 켜기";
+  $("#tidyLabel").textContent = db.settings.tidy ? "‘- EP’ 꼬리표 다시 표시" : "‘- EP’ 꼬리표 감추기";
   $$("#ctrySeg button").forEach(b => b.classList.toggle("on", b.dataset.c === db.settings.country));
 }
 mq.addEventListener("change", () => { if (db.settings.theme === "auto") { applyTheme(); render(); if (ui.sheet) renderSheet(); } });
@@ -1088,8 +1130,8 @@ function albumsVisible() {
   return list;
 }
 function artHTML(a) {
-  if (a.cover) return `<img src="${esc(a.cover)}" alt="" loading="lazy" data-t="${esc(a.title)}" data-a="${esc(a.artist)}" onerror="coverFail(this)">`;
-  return `<div class="ph" style="background:${fauxCover(a.title, a.artist)}">${esc(a.title)}</div>`;
+  if (a.cover) return `<img src="${esc(a.cover)}" alt="" loading="lazy" data-t="${esc(dispT(a.title))}" data-a="${esc(a.artist)}" onerror="coverFail(this)">`;
+  return `<div class="ph" style="background:${fauxCover(a.title, a.artist)}">${esc(dispT(a.title))}</div>`;
 }
 /* 커버 주소가 죽었을 때 앨범명으로 만든 그라데이션으로 갈아끼운다. */
 function coverFail(img) {
@@ -1115,10 +1157,8 @@ function renderAlbums() {
     </div>
     ${list.length ? `<div class="grid" id="grid">${list.map(a => `
       <button class="card" data-id="${a.id}">
-        <div class="art">${artHTML(a)}
-          <span class="badge ${isNum(a.rating) ? "" : "none"}">${isNum(a.rating) ? fmt(a.rating) : "–"}</span>
-        </div>
-        <div class="meta"><div class="t">${esc(a.title)}</div><div class="a">${esc(a.artist)}</div></div>
+        <div class="art">${artHTML(a)}${badgeHTML(a.rating)}</div>
+        <div class="meta"><div class="t">${esc(dispT(a.title))}</div><div class="a">${esc(a.artist)}</div></div>
       </button>`).join("")}</div>`
       : emptyHTML(db.albums.length ? "조건에 맞는 앨범이 없습니다" : "첫 앨범을 추가해 보세요",
                   db.albums.length ? "검색어나 필터를 바꿔 보세요." : "앨범명이나 아티스트로 검색하면 커버와 수록곡까지 같이 들어옵니다.")}`;
@@ -1130,6 +1170,9 @@ function renderAlbums() {
   ss.value = ui.albSort;
   ss.onchange = () => { ui.albSort = ss.value; renderAlbums(); };
   $$("#grid .card").forEach(c => c.onclick = () => openSheet("album", c.dataset.id));
+}
+function badgeHTML(v) {
+  return `<span class="badge ${isNum(v) ? "" : "none"}" style="--bc:${isNum(v) ? hue(v) : ""}"><span class="v">${isNum(v) ? fmt(v) : "–"}</span></span>`;
 }
 function emptyHTML(h, p) {
   return `<div class="empty"><h2>${esc(h)}</h2><p>${esc(p)}</p>
@@ -1208,7 +1251,7 @@ function renderTracks() {
 }
 function trackRowHTML(t, i) {
   const cov = coverOf(t);
-  const alb = albumTitleOf(t);
+  const alb = dispT(albumTitleOf(t));
   return `<div class="lrow" data-id="${t.id}">
     <span class="idx">${i + 1}</span>
     <span class="main">
@@ -1265,9 +1308,7 @@ function acardHTML(a) {
       <span class="nm" style="display:block">${esc(a.name)}</span>
       <span class="st">앨범 ${a.albums.length} · 곡 ${a.tracks.length}${a.nRated ? ` · 평가 ${a.nRated}` : ""}</span>
     </span>
-    <span class="score set" style="color:${hue(score)};pointer-events:none">
-      <span class="fill" style="width:${isNum(score) ? score * 10 : 0}%"></span>
-      <span class="v">${isNum(score) ? fmt(score) : "–"}</span></span>
+    ${scoreHTML(score, { inert: true })}
   </button>`;
 }
 function mosaicHTML(covers, name, style) {
@@ -1312,7 +1353,7 @@ function renderAlbumSheet() {
       <div class="hero-row">
         <div class="hero-art">${artHTML(a)}</div>
         <div style="min-width:0">
-          <h1>${esc(a.title)}</h1>
+          <h1>${esc(dispT(a.title))}</h1>
           <div class="who" id="toArtist">${esc(a.artist)}</div>
           <div class="facts">${[a.year, a.genre, ts.length ? ts.length + "곡" : ""].filter(Boolean).map(esc).join(" · ")}</div>
         </div>
@@ -1453,7 +1494,7 @@ async function refetchTracks(a) {
       id = hits[0].appleId; a.appleId = id;
       if (!a.cover) a.cover = hits[0].cover;
     }
-    const ts = await fetchTracks(id, db.settings.country);
+    const ts = await fetchTracks(id, db.settings.country, { title: a.title, artist: a.artist });
     if (!ts.length) { if (hint) hint.textContent = "수록곡 정보가 없습니다"; return; }
     mergeTracks(a, ts);
     toast(`수록곡 ${ts.length}곡을 불러왔습니다`);
@@ -1507,7 +1548,7 @@ function renderTrackSheet() {
         <div style="min-width:0">
           <h1>${esc(t.title)}</h1>
           <div class="who" id="toArtist">${esc(t.artist)}</div>
-          <div class="facts">${[a ? a.title : (t.album || "싱글"), dur(t.ms), a && a.year ? a.year : ""].filter(Boolean).map(esc).join(" · ")}</div>
+          <div class="facts">${[a ? dispT(a.title) : (t.album || "싱글"), dur(t.ms), a && a.year ? a.year : ""].filter(Boolean).map(esc).join(" · ")}</div>
         </div>
       </div>
     </div>
@@ -1531,12 +1572,11 @@ function renderTrackSheet() {
     </div>
 
     ${a ? `<div class="sec">
-      <h3>같은 앨범 · ${esc(a.title)}</h3>
+      <h3>같은 앨범 · ${esc(dispT(a.title))}</h3>
       <div class="tracks">${sibs.map(s => `<div class="lrow" data-id="${s.id}" style="grid-template-columns:26px 1fr auto">
         <span class="idx">${s.no}</span>
         <span class="tt" style="${s.id === t.id ? "font-weight:640" : ""}">${esc(s.title)}</span>
-        <span class="score ${isNum(s.rating) ? "set" : ""}" style="color:${hue(s.rating)};pointer-events:none">
-          <span class="fill" style="width:${isNum(s.rating) ? s.rating * 10 : 0}%"></span><span class="v">${isNum(s.rating) ? fmt(s.rating) : "–"}</span></span>
+        ${scoreHTML(s.rating, { inert: true })}
       </div>`).join("")}</div>
       <div class="rate-actions" style="margin-top:12px"><button class="btn" id="toAlbum">앨범 페이지 열기</button></div>
     </div>` : ""}
@@ -1630,8 +1670,8 @@ function renderArtistSheet() {
       <h3>디스코그래피</h3>
       <div class="discog">${albs.map(x => `
         <button class="card" data-aid="${x.id}">
-          <div class="art">${artHTML(x)}<span class="badge ${isNum(x.rating) ? "" : "none"}">${isNum(x.rating) ? fmt(x.rating) : "–"}</span></div>
-          <div class="meta"><div class="t">${esc(x.title)}</div><div class="dyear">${esc(x.year || "")}</div></div>
+          <div class="art">${artHTML(x)}${badgeHTML(x.rating)}</div>
+          <div class="meta"><div class="t">${esc(dispT(x.title))}</div><div class="dyear">${esc(x.year || "")}</div></div>
         </button>`).join("") || `<p class="hint">등록된 앨범이 없습니다.</p>`}</div>
     </div>
 
@@ -1852,7 +1892,7 @@ function renderStats() {
         <h3>최고의 앨범</h3><p class="cap">전체 ${A.length}장 중</p>
         <div class="ranklist">${topA.map((a, i) => `
           <div class="rank" data-aid="${a.id}"><span class="i">${i + 1}</span>
-            <span class="n">${esc(a.title)} <small>${esc(a.artist)}</small></span>
+            <span class="n">${esc(dispT(a.title))} <small>${esc(a.artist)}</small></span>
             <span class="sc" style="color:${hue(a.rating)}">${fmt(a.rating)}</span></div>`).join("") || `<p class="hint">아직 없습니다.</p>`}</div>
       </div>
     </div>
@@ -1864,14 +1904,14 @@ function renderStats() {
         ${scatterSVG(gap)}
         ${gapSorted.length ? `<div class="ranklist" style="margin-top:10px">${gapSorted.map(g => `
           <div class="rank" data-aid="${g.id}"><span class="i"></span>
-            <span class="n">${esc(g.label)}</span>
+            <span class="n">${esc(dispT(g.label))}</span>
             <span class="sc" style="color:${g.d > 0 ? hue(8.5) : hue(3)}">${g.d > 0 ? "+" : ""}${fmt(g.d)}</span></div>`).join("")}</div>` : ""}
       </div>
       <div class="panel">
         <h3>기복이 큰 앨범</h3><p class="cap">수록곡 점수의 표준편차가 큰 순서 (4곡 이상 평가한 앨범)</p>
         <div class="ranklist">${spread.map((s, i) => `
           <div class="rank" data-aid="${s.id}"><span class="i">${i + 1}</span>
-            <span class="n">${esc(s.title)} <small>${esc(s.artist)}</small></span>
+            <span class="n">${esc(dispT(s.title))} <small>${esc(s.artist)}</small></span>
             <span class="sc">±${fmt(s.s)}</span></div>`).join("") || `<p class="hint">한 앨범에서 4곡 이상 평가하면 나타납니다.</p>`}</div>
         <h3 style="margin-top:22px">최근 60일 평가</h3>
         <div style="display:flex;gap:2px;align-items:flex-end;height:56px;margin-top:10px">
@@ -2060,7 +2100,7 @@ async function addFromResult(r, btn) {
   try {
     const ts = r.via === "claude"
       ? await claudeTracks(r.title, r.artist)
-      : await fetchTracks(r.appleId, db.settings.country);
+      : await fetchTracks(r.appleId, db.settings.country, { title: r.title, artist: r.artist });
     ts.forEach((t, i) => db.tracks.push(mkTrack(t, a.id, a.artist, i)));
     if (!ts.length) msg += " · 수록곡을 찾지 못했습니다";
   } catch (e) {
@@ -2502,6 +2542,7 @@ el.menu.addEventListener("click", (e) => {
   else if (act === "sync") { if (ghOn()) pull(false); else openGHConfig(); }
   else if (act === "ghcfg") openGHConfig();
   else if (act === "glass") { db.settings.glass = !db.settings.glass; applyTheme(); save(); if (!db.settings.glass) document.body.style.setProperty("--tint", "transparent"); }
+  else if (act === "tidy") { db.settings.tidy = !db.settings.tidy; applyTheme(); save(); render(); if (ui.sheet) renderSheet(); }
 });
 el.file.addEventListener("change", (e) => { const f = e.target.files[0]; if (f) readFile(f); e.target.value = ""; });
 
