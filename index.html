@@ -962,30 +962,58 @@ function jsonp(url) {
   });
 }
 async function apiGet(url) {
+  let d = null;
   try {
     const r = await fetch(url);
-    if (r.ok) return await r.json();
+    if (r.ok) d = await r.json();
   } catch (e) { /* CORS면 JSONP로 */ }
-  return await jsonp(url);
+  if (!d) d = await jsonp(url);
+  // 애플은 파라미터가 틀리면 200 으로 errorMessage 를 돌려준다.
+  if (d && d.errorMessage) { const e = new Error(d.errorMessage); e.apple = true; throw e; }
+  return d;
 }
 const big = (u) => u ? u.replace(/\/\d+x\d+bb\.(jpg|png)/, "/600x600bb.$1") : "";
 
+/* 애플이 entity 값 검증을 조여서, media 를 함께 보내지 않으면 거부한다.
+   규격에 맞는 조합부터 시도하고 거부당하면 다음 조합으로 넘어간다. */
+const VARIANTS = {
+  album: ["media=music&entity=album", "entity=album", "media=music"],
+  song: ["media=music&entity=song", "entity=musicTrack", "entity=allTrack", "media=music"]
+};
+const isAlbumRow = (r) => r && (r.wrapperType === "collection" || r.collectionType === "Album") && r.collectionId;
+const isSongRow = (r) => r && (r.wrapperType === "track" || r.kind === "song") && r.kind !== "music-video";
+
+async function itSearch(term, kind, country, limit) {
+  let last = null;
+  for (const v of VARIANTS[kind]) {
+    for (const c of [country, null]) {
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&${v}&limit=${limit || 24}${c ? `&country=${c}` : ""}`;
+      let d;
+      try { d = await apiGet(url); } catch (e) { last = e; continue; }
+      const rows = (d.results || []).filter(kind === "album" ? isAlbumRow : isSongRow);
+      if (rows.length) return rows;
+    }
+  }
+  if (last) throw last;
+  return [];
+}
+const rowToAlbum = (r) => ({
+  appleId: r.collectionId, title: r.collectionName || "", artist: r.collectionArtistName || r.artistName || "",
+  year: (r.releaseDate || "").slice(0, 4), genre: r.primaryGenreName || "",
+  cover: big(r.artworkUrl100), n: r.trackCount || 0
+});
 async function searchAlbums(term, country) {
-  const d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=album&limit=24&country=${country}`);
-  return (d.results || []).map(r => ({
-    appleId: r.collectionId, title: r.collectionName, artist: r.artistName,
-    year: (r.releaseDate || "").slice(0, 4), genre: r.primaryGenreName || "",
-    cover: big(r.artworkUrl100), n: r.trackCount
-  }));
+  const rows = await itSearch(term, "album", country);
+  return rows.map(rowToAlbum).filter(a => a.title);
 }
 async function searchSongs(term, country) {
-  const d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=24&country=${country}`);
-  return (d.results || []).map(r => ({
+  const rows = await itSearch(term, "song", country);
+  return rows.map(r => ({
     kind: "song", appleId: r.trackId, collectionId: r.collectionId,
     title: r.trackName, artist: r.artistName, album: r.collectionName || "",
     year: (r.releaseDate || "").slice(0, 4), genre: r.primaryGenreName || "",
     cover: big(r.artworkUrl100), ms: r.trackTimeMillis || 0, no: r.trackNumber || 1, disc: r.discNumber || 1
-  }));
+  })).filter(t => t.title);
 }
 function mapSongRows(rows) {
   return rows
@@ -996,24 +1024,20 @@ function mapSongRows(rows) {
 /* 앨범 색인에는 안 잡히는데 곡은 잡히는 앨범이 있다 (인디·믹스테이프에서 잦음).
    곡 검색 결과를 collectionId로 묶어 앨범 후보로 되돌린다. */
 async function albumsFromSongs(term, country) {
-  const d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=50&country=${country}`);
+  const rows = await itSearch(term, "song", country, 50);
   const by = new Map();
-  for (const r of (d.results || [])) {
-    if (r.wrapperType !== "track" || r.kind === "music-video" || !r.collectionId) continue;
-    if (!by.has(r.collectionId)) by.set(r.collectionId, {
-      appleId: r.collectionId, title: r.collectionName || "",
-      artist: r.collectionArtistName || r.artistName || "",
-      year: (r.releaseDate || "").slice(0, 4), genre: r.primaryGenreName || "",
-      cover: big(r.artworkUrl100), n: r.trackCount || 0
-    });
+  for (const r of rows) {
+    if (!r.collectionId) continue;
+    if (!by.has(r.collectionId)) by.set(r.collectionId, rowToAlbum(r));
   }
   return [...by.values()].filter(a => a.title);
 }
 async function fetchTracks(appleId, country, hint) {
   // 1) lookup. limit 상한은 200이고, 스토어가 안 맞으면 빈 결과가 오므로 국가를 빼고도 시도한다.
   const urls = [
+    `https://itunes.apple.com/lookup?id=${appleId}&media=music&entity=song&limit=200&country=${country}`,
+    `https://itunes.apple.com/lookup?id=${appleId}&media=music&entity=song&limit=200`,
     `https://itunes.apple.com/lookup?id=${appleId}&entity=song&limit=200&country=${country}`,
-    `https://itunes.apple.com/lookup?id=${appleId}&entity=song&limit=200`,
     `https://itunes.apple.com/lookup?id=${appleId}&entity=song`
   ];
   let last = null;
@@ -1028,12 +1052,9 @@ async function fetchTracks(appleId, country, hint) {
   if (hint && (hint.title || hint.artist)) {
     const term = ((hint.artist || "") + " " + (hint.title || "")).trim();
     const tKey = akey(hint.title || "");
-    for (const c of [country, null]) {
-      let d;
-      try {
-        d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&entity=song&limit=50${c ? `&country=${c}` : ""}`);
-      } catch (e) { last = e; continue; }
-      const rows = (d.results || []);
+    {
+      let rows;
+      try { rows = await itSearch(term, "song", country, 50); } catch (e) { rows = []; last = e; }
       let mine = rows.filter(r => r.collectionId === appleId);
       if (!mine.length && tKey) {
         mine = rows.filter(r => {
@@ -2170,6 +2191,7 @@ async function doSearch() {
     itunesBlocked = false;
   } catch (e) {
     itunesBlocked = true;
+    s.errDetail = e && e.message ? e.message : "";
     s.err = "";
   }
   s.busy = false;
@@ -2177,7 +2199,7 @@ async function doSearch() {
     : (window.storage
       ? `애플 음악 검색이 이 화면에서 차단돼 있습니다. <button class="btn" id="viaClaude" style="margin-left:6px">Claude로 찾기</button>
          <span class="hint" style="display:block;margin-top:6px">사용량이 조금 소모됩니다.</span>`
-      : "검색에 실패했습니다. 잠시 뒤 다시 시도하거나 직접 입력으로 넣어 주세요.");
+      : "검색에 실패했습니다" + (s.errDetail ? ` — ${esc(s.errDetail)}` : "") + ". 잠시 뒤 다시 시도하거나 직접 입력으로 넣어 주세요.");
   const vc = $("#viaClaude");
   if (vc) vc.onclick = () => claudeSearch(term);
   $("#resWrap").innerHTML = resultsHTML();
