@@ -9,7 +9,7 @@
   --sep:rgba(0,0,0,.09); --sep-2:rgba(0,0,0,.15);
   --accent:#0071e3;
   --chip:rgba(0,0,0,.045); --chip-h:rgba(0,0,0,.08); --field:rgba(0,0,0,.05);
-  --glass:rgba(255,255,255,.68); --glass-bar:rgba(255,255,255,.44); --glass-hi:rgba(255,255,255,.7); --glass-lo:rgba(0,0,0,.05);
+  --glass:rgba(255,255,255,.68); --glass-hi:rgba(255,255,255,.7); --glass-lo:rgba(0,0,0,.05);
   --sh-1:0 1px 2px rgba(0,0,0,.05);
   --sh-2:0 6px 22px rgba(0,0,0,.09);
   --sh-3:0 24px 70px rgba(0,0,0,.24);
@@ -23,7 +23,7 @@
   --sep:rgba(255,255,255,.11); --sep-2:rgba(255,255,255,.2);
   --accent:#0a84ff;
   --chip:rgba(255,255,255,.08); --chip-h:rgba(255,255,255,.14); --field:rgba(255,255,255,.07);
-  --glass:rgba(28,28,30,.66); --glass-bar:rgba(28,28,30,.42); --glass-hi:rgba(255,255,255,.14); --glass-lo:rgba(0,0,0,.4);
+  --glass:rgba(28,28,30,.66); --glass-hi:rgba(255,255,255,.14); --glass-lo:rgba(0,0,0,.4);
   --sh-1:0 1px 2px rgba(0,0,0,.4);
   --sh-2:0 6px 22px rgba(0,0,0,.5);
   --sh-3:0 24px 70px rgba(0,0,0,.75);
@@ -305,11 +305,12 @@ svg.chart .gl{stroke:var(--sep)}
 /* ============ 모바일 탭바 ============ */
 .tabbar{position:fixed;left:50%;transform:translateX(-50%);width:min(460px,calc(100% - 24px));
   bottom:calc(10px + env(safe-area-inset-bottom));z-index:50;display:none;
-  border-radius:26px;padding:5px 6px;background:var(--glass-bar);
-  box-shadow:0 14px 40px rgba(0,0,0,.22),0 1px 2px rgba(0,0,0,.06),inset 0 .5px 0 var(--glass-hi),inset 0 0 0 .5px var(--sep)}
-.glass .tabbar{-webkit-backdrop-filter:saturate(220%) blur(38px);backdrop-filter:saturate(220%) blur(38px)}
+  border-radius:20px;padding:5px 6px;background:var(--glass);border:.5px solid var(--sep-2);
+  box-shadow:var(--sh-2)}
+.glass .tabbar{-webkit-backdrop-filter:saturate(200%) blur(32px);backdrop-filter:saturate(200%) blur(32px);
+  box-shadow:var(--sh-2),inset 0 .5px 0 var(--glass-hi)}
 body.noglass .tabbar{left:0;right:0;bottom:0;width:auto;transform:none;border-radius:0;background:var(--elev);
-  border-top:.5px solid var(--sep);box-shadow:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+  border:none;border-top:.5px solid var(--sep);box-shadow:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
 .tabbar .in{display:flex}
 .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;border-radius:18px;
   font-size:10.5px;color:var(--text-3);font-weight:500;transition:background .2s,color .18s,transform .12s}
