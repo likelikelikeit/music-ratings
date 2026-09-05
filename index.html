@@ -1082,6 +1082,44 @@ const rowToAlbum = (r) => ({
   year: (r.releaseDate || "").slice(0, 4), date: (r.releaseDate || "").slice(0, 10), genre: r.primaryGenreName || "",
   cover: big(r.artworkUrl100), n: r.trackCount || 0
 });
+/* 아티스트를 찾고, 그 아티스트의 앨범 목록을 통째로 받아온다.
+   term 검색은 관련도순이라 덜 유명한 앨범이 밀려서 안 나오는데, 이 경로는 누락이 없다. */
+async function searchArtists(term, country) {
+  const variants = ["media=music&entity=musicArtist", "entity=musicArtist", "entity=allArtist"];
+  let last = null;
+  for (const v of variants) {
+    for (const c of [country, null]) {
+      let d;
+      try {
+        d = await apiGet(`https://itunes.apple.com/search?term=${encodeURIComponent(term)}&${v}&limit=12${c ? `&country=${c}` : ""}`);
+      } catch (e) { last = e; continue; }
+      const rows = (d.results || []).filter(r => r.artistId && (r.wrapperType === "artist" || r.artistType));
+      if (rows.length) return rows.map(r => ({
+        artistId: r.artistId, name: r.artistName || "", genre: r.primaryGenreName || ""
+      }));
+    }
+  }
+  if (last) throw last;
+  return [];
+}
+async function artistAlbums(artistId, country) {
+  const urls = [
+    `https://itunes.apple.com/lookup?id=${artistId}&media=music&entity=album&limit=200&country=${country}`,
+    `https://itunes.apple.com/lookup?id=${artistId}&media=music&entity=album&limit=200`,
+    `https://itunes.apple.com/lookup?id=${artistId}&entity=album&limit=200`
+  ];
+  let last = null;
+  for (const u of urls) {
+    let d;
+    try { d = await apiGet(u); } catch (e) { last = e; continue; }
+    const rows = (d.results || []).filter(isAlbumRow);
+    if (rows.length) return rows.map(rowToAlbum).filter(a => a.title)
+      .sort((a, b) => sortKeyDate(b).localeCompare(sortKeyDate(a)));
+  }
+  if (last) throw last;
+  return [];
+}
+
 /* 앨범 자체 정보(발매일 등)를 한 건 조회한다. */
 async function fetchAlbumMeta(appleId, country) {
   for (const c of [country, null]) {
@@ -2217,17 +2255,17 @@ function closeDlg() {
   if (!ui.sheet) { el.scrim.classList.remove("show"); document.body.classList.remove("modal"); }
   ui.dlg = null;
 }
-let addState = { tab: "album", results: [], busy: false, err: "", editing: null };
+let addState = { tab: "album", results: [], busy: false, err: "", editing: null, artists: [], picked: null, albums: null, sel: new Set(), aterm: "" };
 
 function openAdd() {
-  addState = { tab: "album", results: [], busy: false, err: "", editing: null };
+  addState = { tab: "album", results: [], busy: false, err: "", editing: null, artists: [], picked: null, albums: null, sel: new Set(), aterm: "" };
   el.dlgTitle.textContent = "추가";
   renderAdd();
   openDlg();
   setTimeout(() => $("#sq") && $("#sq").focus(), 80);
 }
 function openManual(a) {
-  addState = { tab: "manual", results: [], busy: false, err: "", editing: a || null };
+  addState = { tab: "manual", results: [], busy: false, err: "", editing: a || null, artists: [], picked: null, albums: null, sel: new Set(), aterm: "" };
   el.dlgTitle.textContent = a ? "앨범 정보 수정" : "추가";
   renderAdd();
   openDlg();
@@ -2236,9 +2274,9 @@ function renderAdd() {
   const s = addState;
   el.dlgBody.innerHTML = `
     ${s.editing ? "" : `<div class="seg sm" id="addSeg" style="margin-bottom:14px">
-      <button data-t="album">앨범 검색</button><button data-t="song">곡 검색</button><button data-t="bulk">여러 장</button><button data-t="manual">직접 입력</button>
+      <button data-t="album">앨범</button><button data-t="artist">아티스트</button><button data-t="song">곡</button><button data-t="bulk">여러 장</button><button data-t="manual">직접</button>
     </div>`}
-    ${s.tab === "manual" ? manualHTML(s.editing) : s.tab === "bulk" ? bulkHTML() : `
+    ${s.tab === "manual" ? manualHTML(s.editing) : s.tab === "bulk" ? bulkHTML() : s.tab === "artist" ? artistTabHTML() : `
       <div class="searchbox" style="flex:1;max-width:none">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
         <input id="sq" placeholder="${s.tab === "song" ? "곡명 또는 아티스트" : "앨범명 또는 아티스트"}" autocomplete="off">
@@ -2255,6 +2293,7 @@ function renderAdd() {
   });
   if (s.tab === "manual") return bindManual();
   if (s.tab === "bulk") return bindBulk();
+  if (s.tab === "artist") return bindArtistTab();
   $("#goSearch").onclick = doSearch;
   $("#sq").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
   bindResults();
@@ -2305,9 +2344,14 @@ async function doSearch() {
       s.results = await searchSongs(term, db.settings.country);
     } else {
       s.results = await searchAlbums(term, db.settings.country);
-      if (!s.results.length) {
-        s.results = await albumsFromSongs(term, db.settings.country);
-        s.derived = s.results.length > 0;
+      if (s.results.length < 3) {
+        // 덜 알려진 앨범은 앨범 색인에서 밀리므로 곡 경유 결과를 자동으로 합친다.
+        try {
+          const extra = await albumsFromSongs(term, db.settings.country);
+          const have = new Set(s.results.map(r => r.appleId));
+          const fresh = extra.filter(r => !have.has(r.appleId));
+          if (fresh.length) { s.results = s.results.concat(fresh); s.derived = true; }
+        } catch (e) { /* 실패해도 앨범 결과는 그대로 보여준다 */ }
       }
     }
     s.err = s.results.length ? (s.derived ? "앨범 색인에 없어서 곡 검색을 통해 찾았습니다." : "") : "검색 결과가 없습니다";
@@ -2377,6 +2421,142 @@ async function addFromResult(r, btn) {
   lab.textContent = "열기";
   btn.onclick = () => { closeDlg(); openSheet("album", a.id); };
   toast(msg + " — 계속 검색해서 더 담을 수 있습니다");
+}
+function artistTabHTML() {
+  const s = addState;
+  const picked = s.picked;
+  return `
+    <div class="searchbox" style="flex:1;max-width:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
+      <input id="aq" placeholder="아티스트 이름" autocomplete="off" value="${esc(s.aterm || "")}">
+    </div>
+    <div class="rate-actions" style="margin-top:11px">
+      <button class="btn primary" id="aGo">아티스트 찾기</button>
+      ${picked ? `<button class="btn" id="aBack">다른 아티스트</button>` : ""}
+      <span class="hint" id="aHint"></span>
+    </div>
+    <div id="aOut">${picked ? artistAlbumsHTML() : artistPicksHTML()}</div>`;
+}
+function artistPicksHTML() {
+  const s = addState;
+  if (!s.artists || !s.artists.length) return "";
+  return `<div class="res">${s.artists.map((a, i) => `
+    <button class="rescard" data-ai="${i}">
+      <span style="width:48px;height:48px;border-radius:50%;flex:none;background:${fauxCover(a.name, "")}"></span>
+      <span style="min-width:0;flex:1"><span class="t" style="display:block">${esc(a.name)}</span>
+        <span class="s">${esc(a.genre || "")}</span></span>
+      <span class="add">앨범 보기</span>
+    </button>`).join("")}</div>`;
+}
+function artistAlbumsHTML() {
+  const s = addState;
+  if (!s.albums) return "";
+  if (!s.albums.length) return `<p class="hint" style="padding:14px 2px">앨범을 찾지 못했습니다.</p>`;
+  const newN = s.albums.filter(a => !a.have).length;
+  return `
+    <div class="rate-actions" style="margin:14px 0 6px">
+      <button class="btn" id="aAll">${s.sel.size === newN && newN ? "전체 해제" : `새 앨범 ${newN}장 모두 선택`}</button>
+      <button class="btn primary" id="aAdd" ${s.sel.size ? "" : "disabled style=opacity:.5"}>선택한 ${s.sel.size}장 추가</button>
+    </div>
+    <div class="res">${s.albums.map((a, i) => `
+      <button class="rescard" data-al="${i}" ${a.have ? "disabled style=opacity:.45" : ""}>
+        ${a.cover ? `<img src="${esc(a.cover)}" alt="" loading="lazy">` : `<span style="width:48px;height:48px;border-radius:7px;background:${fauxCover(a.title, a.artist)}"></span>`}
+        <span style="min-width:0;flex:1">
+          <span class="t" style="display:block">${esc(dispT(a.title))}</span>
+          <span class="s">${[a.date ? a.date.slice(0, 7).replace("-", ". ") : a.year, a.n ? a.n + "곡" : "", a.genre].filter(Boolean).map(esc).join(" · ")}</span>
+        </span>
+        <span class="add" id="ck${i}">${a.have ? "있음" : (s.sel.has(i) ? "✓ 선택됨" : "선택")}</span>
+      </button>`).join("")}</div>`;
+}
+function bindArtistTab() {
+  const s = addState;
+  const inp = $("#aq");
+  inp.addEventListener("keydown", (e) => { if (e.key === "Enter") findArtists(); });
+  $("#aGo").onclick = findArtists;
+  if ($("#aBack")) $("#aBack").onclick = () => { s.picked = null; s.albums = null; s.sel = new Set(); renderAdd(); };
+  $$("#aOut .rescard[data-ai]").forEach(b => b.onclick = () => loadDiscography(s.artists[+b.dataset.ai]));
+  bindArtistTab2();
+}
+function bindArtistTab2() {
+  const s = addState;
+  $$("#aOut .rescard[data-al]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.al;
+    if (s.albums[i].have) return;
+    if (s.sel.has(i)) s.sel.delete(i); else s.sel.add(i);
+    $("#aOut").innerHTML = artistAlbumsHTML();
+    bindArtistTab2();
+  });
+  if ($("#aAll")) $("#aAll").onclick = () => {
+    const idx = s.albums.map((a, i) => a.have ? -1 : i).filter(i => i >= 0);
+    s.sel = s.sel.size === idx.length ? new Set() : new Set(idx);
+    $("#aOut").innerHTML = artistAlbumsHTML();
+    bindArtistTab2();
+  };
+  if ($("#aAdd")) $("#aAdd").onclick = addPickedAlbums;
+}
+async function findArtists() {
+  const s = addState;
+  s.aterm = ($("#aq").value || "").trim();
+  if (!s.aterm) return;
+  s.picked = null; s.albums = null; s.sel = new Set();
+  $("#aHint").innerHTML = `<span class="spin"></span> 찾는 중…`;
+  try {
+    s.artists = await searchArtists(s.aterm, db.settings.country);
+    $("#aHint").textContent = s.artists.length ? "" : "아티스트를 찾지 못했습니다";
+    if (s.artists.length === 1) return loadDiscography(s.artists[0]);
+  } catch (e) {
+    s.artists = [];
+    $("#aHint").textContent = "검색 실패 — " + e.message;
+  }
+  $("#aOut").innerHTML = artistPicksHTML();
+  bindArtistTab();
+}
+async function loadDiscography(a) {
+  const s = addState;
+  s.picked = a;
+  $("#aHint").innerHTML = `<span class="spin"></span> ${esc(a.name)}의 앨범을 불러오는 중…`;
+  try {
+    const list = await artistAlbums(a.artistId, db.settings.country);
+    s.albums = list.map(x => Object.assign({}, x, {
+      have: !!db.albums.find(y => y.appleId === x.appleId || (akey(y.title) === akey(x.title) && y.artistKey === akey(x.artist)))
+    }));
+    s.sel = new Set();
+    $("#aHint").textContent = `${s.albums.length}장 · 이미 있는 ${s.albums.filter(x => x.have).length}장`;
+  } catch (e) {
+    s.albums = [];
+    $("#aHint").textContent = "앨범 목록을 받지 못했습니다 — " + e.message;
+  }
+  renderAdd();
+}
+async function addPickedAlbums() {
+  const s = addState;
+  const picks = [...s.sel].map(i => s.albums[i]);
+  if (!picks.length) return;
+  const btn = $("#aAdd");
+  btn.disabled = true;
+  mark("아티스트 앨범 추가");
+  let done = 0;
+  for (const r of picks) {
+    btn.innerHTML = `<span class="spin"></span> ${done + 1} / ${picks.length}`;
+    const a = {
+      id: uid("a"), title: r.title, artist: r.artist, artistKey: akey(r.artist),
+      year: r.year, date: r.date || "", titleTrackId: null, genre: r.genre, cover: r.cover, appleId: r.appleId,
+      rating: null, review: "", added: now(), ratedAt: null
+    };
+    db.albums.push(a);
+    try {
+      const ts = await fetchTracks(r.appleId, db.settings.country, { title: r.title, artist: r.artist });
+      ts.forEach((t, j) => db.tracks.push(mkTrack(t, a.id, a.artist, j)));
+    } catch (e) { /* 수록곡은 나중에 앨범에서 다시 가져오면 된다 */ }
+    r.have = true;
+    done++;
+    save();
+    if (done < picks.length) await new Promise(r2 => setTimeout(r2, 900));
+  }
+  s.sel = new Set();
+  render();
+  renderAdd();
+  toast(`앨범 ${done}장을 추가했습니다`);
 }
 function bulkHTML() {
   return `
