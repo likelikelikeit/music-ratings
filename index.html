@@ -449,7 +449,7 @@ const SNAP_KEYS = ["snap_0", "snap_1", "snap_2"];
 
 let db = {
   version: 2, albums: [], tracks: [], artists: [],
-  settings: { theme: "auto", glass: true, country: "KR", bayes: true, tidy: true, doSplit: [] }
+  settings: { theme: "auto", glass: true, country: "KR", bayes: true, tidy: true, doSplit: [], alias: {}, artistName: {} }
 };
 let ui = {
   view: "albums", q: "", albSort: "added", albFilter: "all",
@@ -811,9 +811,11 @@ function undo() {
 function normalize(d) {
   const out = {
     version: 2, albums: [], tracks: [], artists: [],
-    settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true, tidy: true, doSplit: [] }, (d && d.settings) || {})
+    settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true, tidy: true, doSplit: [], alias: {}, artistName: {} }, (d && d.settings) || {})
   };
   if (!Array.isArray(out.settings.doSplit)) out.settings.doSplit = [];
+  if (!out.settings.alias || typeof out.settings.alias !== "object") out.settings.alias = {};
+  if (!out.settings.artistName || typeof out.settings.artistName !== "object") out.settings.artistName = {};
   delete out.settings.noSplit;
   const albums = Array.isArray(d) ? d : ((d && d.albums) || []);
   for (const a of albums) {
@@ -894,20 +896,39 @@ function creditsOf(name) {
   return out.length > 1 ? out : [raw];
 }
 function creditLinks(name) {
-  return creditsOf(name).map(n =>
-    `<span class="wl" data-k="${esc(akey(n))}">${esc(n)}</span>`
-  ).join(`<span style="color:var(--text-3);font-weight:400"> · </span>`);
+  return creditsOf(name).map(n => {
+    const k = primaryKey(akey(n));
+    const disp = nameMap()[k] || n;
+    return `<span class="wl" data-k="${esc(k)}">${esc(disp)}</span>`;
+  }).join(`<span style="color:var(--text-3);font-weight:400"> · </span>`);
 }
 function bindCredits() {
   $$(".wl", el.sheetBody).forEach(b => b.onclick = () => { if (b.dataset.k) openSheet("artist", b.dataset.k); });
 }
+/* 같은 아티스트가 표기만 다르게 오는 경우("한로로" / "HANRORO")를 별칭으로 묶는다.
+   곡·앨범 데이터는 건드리지 않고 이름 대응만 저장하므로 언제든 분리할 수 있다. */
+const aliasMap = () => (db.settings.alias || (db.settings.alias = {}));
+const nameMap = () => (db.settings.artistName || (db.settings.artistName = {}));
+function primaryKey(k) {
+  const m = aliasMap();
+  let guard = 0;
+  while (m[k] && m[k] !== k && guard++ < 6) k = m[k];
+  return k;
+}
+function aliasesOf(k) {
+  const m = aliasMap();
+  return Object.keys(m).filter(x => primaryKey(x) === k && x !== k);
+}
 function artistList() {
   const map = new Map();
   const touch = (name) => {
-    const k = akey(name);
-    if (!k) return null;
-    if (!map.has(k)) map.set(k, { key: k, name, albums: [], tracks: [] });
-    return map.get(k);
+    const raw = akey(name);
+    if (!raw) return null;
+    const k = primaryKey(raw);
+    if (!map.has(k)) map.set(k, { key: k, name, names: new Map(), albums: [], tracks: [] });
+    const e = map.get(k);
+    e.names.set(raw, name);
+    return e;
   };
   for (const a of db.albums) for (const n of creditsOf(a.artist)) { const e = touch(n); if (e) e.albums.push(a); }
   for (const t of db.tracks) {
@@ -919,8 +940,10 @@ function artistList() {
     const ar = e.albums.map(a => a.rating).filter(isNum);
     const tr = e.tracks.map(t => t.rating).filter(isNum);
     const saved = db.artists.find(x => x.key === e.key);
+    const chosen = nameMap()[e.key];
+    const name = chosen || e.names.get(e.key) || e.name;
     out.push({
-      key: e.key, name: e.name, albums: e.albums, tracks: e.tracks,
+      key: e.key, name, names: [...e.names.values()], albums: e.albums, tracks: e.tracks,
       albAvg: ar.length ? r1(mean(ar)) : null,
       trkAvg: tr.length ? r1(mean(tr)) : null,
       nRated: tr.length, own: saved ? saved.rating : null, note: saved ? saved.note : ""
@@ -928,7 +951,7 @@ function artistList() {
   }
   return out;
 }
-function artistByKey(k) { return artistList().find(a => a.key === k); }
+function artistByKey(k) { const p = primaryKey(k); return artistList().find(a => a.key === p); }
 function setArtistMeta(key, name, patch) {
   let a = db.artists.find(x => x.key === key);
   if (!a) { a = { id: uid("r"), key, name, rating: null, note: "" }; db.artists.push(a); }
@@ -1773,9 +1796,9 @@ function renderTrackSheet() {
   const cov = a ? a.cover : "";
   tintFrom(cov);
   const sibs = a ? albumTracks(a.id) : [];
-  const myCred = creditsOf(t.artist).map(akey);
+  const myCred = creditsOf(t.artist).map(n => primaryKey(akey(n)));
   const sameArtist = db.tracks.filter(x => x.id !== t.id && isNum(x.rating)
-    && creditsOf(x.artist || (album(x.albumId) || {}).artist).map(akey).some(k => myCred.includes(k)))
+    && creditsOf(x.artist || (album(x.albumId) || {}).artist).map(n => primaryKey(akey(n))).some(k => myCred.includes(k)))
     .sort((x, y) => y.rating - x.rating);
   const rank = sameArtist.filter(x => x.rating > (t.rating ?? -1)).length + 1;
   el.sheetBody.innerHTML = `
@@ -1921,6 +1944,8 @@ function renderArtistSheet() {
           <span class="sc" style="color:${hue(t.rating)}">${fmt(t.rating)}</span></div>`).join("")}</div>
     </div>` : ""}
 
+    ${aliasSecHTML(a)}
+
     ${collabSecHTML(a)}
 
     <div class="sec">
@@ -1941,6 +1966,30 @@ function renderArtistSheet() {
   bindScore(bigv, () => { const x = artistByKey(a.key); return isNum(x.own) ? x.own : null; }, (v) => apply(v));
   if ($("#clearOwn")) $("#clearOwn").onclick = () => { setArtistMeta(a.key, a.name, { rating: null }); save(); renderSheet(); };
   $("#artNote").addEventListener("input", (e) => { setArtistMeta(a.key, a.name, { note: e.target.value }); save(); });
+  if ($("#alGo")) $("#alGo").onclick = () => {
+    const k = $("#alPick").value;
+    if (!k) return toast("합칠 아티스트를 골라 주세요");
+    const other = artistByKey(k);
+    if (!other) return;
+    if (!confirm(`"${other.name}"을(를) "${a.name}"과(와) 같은 아티스트로 묶을까요?\n\n곡·앨범 데이터는 그대로 두고 이름만 연결합니다. 나중에 분리할 수 있습니다.`)) return;
+    mergeArtists(other.key, a.key, a.name);
+  };
+  $$(".alQuick").forEach(b => b.onclick = () => {
+    const other = artistByKey(b.dataset.k);
+    if (other) mergeArtists(other.key, a.key, a.name);
+  });
+  $$(".alSplit").forEach(b => b.onclick = () => {
+    const m = aliasMap();
+    const k = b.dataset.k;
+    for (const x of Object.keys(m)) if (x === k || m[x] === k) delete m[x];
+    delete m[k];
+    save(); render(); renderSheet();
+    toast("분리했습니다");
+  });
+  $$(".alName").forEach(b => b.onclick = () => {
+    nameMap()[a.key] = b.dataset.n;
+    save(); render(); renderSheet();
+  });
   if ($("#nsSplit")) $("#nsSplit").onclick = () => {
     db.settings.doSplit.push(a.key);
     save(); render();
@@ -1957,6 +2006,61 @@ function renderArtistSheet() {
   $$(".rank[data-tid]").forEach(r => r.onclick = () => openSheet("track", r.dataset.tid));
 }
 
+/* 합칠 후보: 같은 앨범에 등장하거나 이름이 비슷한 아티스트를 위로 올린다. */
+function mergeCandidates(a) {
+  const mine = new Set(a.albums.map(x => x.id));
+  const flat = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9가-힣]/g, "");
+  const me = flat(a.name);
+  return artistList().filter(x => x.key !== a.key).map(x => {
+    let score = 3;
+    if (x.albums.some(al => mine.has(al.id))) score = 0;
+    else if (x.tracks.some(t => t.albumId && mine.has(t.albumId))) score = 1;
+    else {
+      const o = flat(x.name);
+      if (me && o && (me.startsWith(o) || o.startsWith(me))) score = 2;
+    }
+    return { x, score };
+  }).sort((p, q) => p.score - q.score || p.x.name.localeCompare(q.x.name, "ko"));
+}
+function aliasSecHTML(a) {
+  const al = aliasesOf(a.key);
+  const cands = mergeCandidates(a);
+  const suggest = cands.filter(c => c.score <= 2).slice(0, 3);
+  if (!cands.length) return "";
+  const names = a.names.filter((n, i, arr) => arr.indexOf(n) === i);
+  return `<div class="sec">
+    <h3>이름 정리</h3>
+    ${al.length ? `
+      <p class="hint" style="margin:0 0 8px">표기가 다른 이름들을 한 아티스트로 묶어 두었습니다.</p>
+      ${al.map(k => `<div class="cmprow" style="align-items:center"><span>${esc(nameMap()[k] || k)}</span>
+        <button class="btn alSplit" data-k="${esc(k)}">분리</button></div>`).join("")}
+      ${names.length > 1 ? `<div style="margin-top:10px"><span class="hint" style="display:block;margin-bottom:6px">표시할 이름</span>
+        <div class="marks">${names.map(n => `<button class="mark alName ${a.name === n ? "on" : ""}" data-n="${esc(n)}"
+          style="${a.name === n ? "background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent)" : ""}">${esc(n)}</button>`).join("")}</div></div>` : ""}
+      <div style="height:14px"></div>` : ""}
+    <p class="hint" style="margin:0 0 8px">같은 아티스트인데 표기가 달라 따로 잡혔다면 합쳐 주세요.</p>
+    ${suggest.length ? `<div class="marks" style="margin-bottom:10px">${suggest.map(c =>
+      `<button class="mark alQuick" data-k="${esc(c.x.key)}">${esc(c.x.name)}와(과) 합치기</button>`).join("")}</div>` : ""}
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select class="sel" id="alPick" style="flex:1;min-width:160px">
+        <option value="">합칠 아티스트 고르기…</option>
+        ${cands.map(c => `<option value="${esc(c.x.key)}">${esc(c.x.name)}${c.score <= 2 ? " ★" : ""} · 앨범 ${c.x.albums.length}</option>`).join("")}
+      </select>
+      <button class="btn" id="alGo">합치기</button>
+    </div>
+  </div>`;
+}
+function mergeArtists(fromKey, intoKey, intoName) {
+  if (!fromKey || fromKey === intoKey) return;
+  mark("아티스트 이름 합치기");
+  const m = aliasMap();
+  // 상대 쪽에 이미 딸린 별칭들도 함께 옮긴다.
+  for (const k of Object.keys(m)) if (primaryKey(k) === fromKey) m[k] = intoKey;
+  m[fromKey] = intoKey;
+  if (intoName) nameMap()[intoKey] = intoName;
+  save(); render();
+  openSheet("artist", intoKey);
+}
 function collabSecHTML(a) {
   const parts = splitName(a.name);
   const canSplit = parts.length > 1 && !(db.settings.doSplit || []).includes(a.key);
