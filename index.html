@@ -54,8 +54,13 @@ input,textarea,select{font-size:16px}
 
 /* ============ 상단 바 ============ */
 .bar{position:sticky;top:0;z-index:40;background:var(--glass);border-bottom:.5px solid var(--sep)}
-.glass .bar{-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
-body.noglass .bar{background:var(--bg)}
+.glass .bar{-webkit-backdrop-filter:saturate(200%) blur(32px);backdrop-filter:saturate(200%) blur(32px);
+  box-shadow:inset 0 .5px 0 var(--glass-hi)}
+body.noglass .bar{background:var(--bg);box-shadow:none}
+.glass .searchbox{background:color-mix(in srgb,var(--field) 65%,transparent)}
+.glass .seg{background:color-mix(in srgb,var(--field) 65%,transparent)}
+.glass .bar .seg button.on{background:color-mix(in srgb,var(--elev) 80%,transparent);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .bar-in{max-width:1280px;margin:0 auto;padding:10px 22px;display:flex;align-items:center;gap:12px}
 .brand{font-size:18.5px;font-weight:600;letter-spacing:-.032em;white-space:nowrap}
 .brand em{font-style:normal;color:var(--text-3);font-weight:400}
@@ -85,7 +90,8 @@ body.noglass .bar{background:var(--bg)}
 /* 메뉴 */
 .menuwrap{position:relative}
 .menu{position:absolute;right:0;top:calc(100% + 8px);min-width:230px;background:var(--glass);border:.5px solid var(--sep-2);border-radius:13px;box-shadow:var(--sh-2);padding:6px;display:none;z-index:60}
-.glass .menu{-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
+.glass .menu{-webkit-backdrop-filter:saturate(200%) blur(32px);backdrop-filter:saturate(200%) blur(32px);
+  box-shadow:var(--sh-2),inset 0 .5px 0 var(--glass-hi)}
 body.noglass .menu{background:var(--elev)}
 .menu.open{display:block}
 .menu button{display:flex;width:100%;align-items:center;gap:10px;padding:8px 11px;border-radius:9px;font-size:14px;text-align:left}
@@ -158,6 +164,8 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-ra
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:70;opacity:0;pointer-events:none;transition:opacity .28s}
 .glass .scrim{-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
 .scrim.show{opacity:1;pointer-events:auto}
+.glass .sheet{background:color-mix(in srgb,var(--elev) 92%,transparent);
+  -webkit-backdrop-filter:saturate(180%) blur(30px);backdrop-filter:saturate(180%) blur(30px)}
 .sheet{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:var(--elev);z-index:80;box-shadow:var(--sh-3);
   transform:translateX(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.show{transform:none}
@@ -191,6 +199,8 @@ body.noglass .hero .wash,body.noglass .hero::after{display:none}
 .trow .no{font-size:12.5px;color:var(--text-3);text-align:right;font-variant-numeric:tabular-nums}
 .trow .tt{font-size:14.5px;letter-spacing:-.015em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
 .trow .dur{font-size:12.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.ttag{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:0;padding:1px 5px;border-radius:5px;
+  background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent);vertical-align:1px}
 .tedit{margin:2px -8px 8px;padding:12px 12px 13px;background:var(--sunken);border-radius:12px;display:flex;flex-direction:column;gap:10px}
 .tedit .line{display:flex;align-items:center;gap:12px}
 .tedit input.note{flex:1;background:var(--field);border:none;border-radius:9px;padding:8px 11px;font-size:14px;outline:none;min-width:0}
@@ -257,6 +267,10 @@ svg.chart .gl{stroke:var(--sep)}
 .dlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.97);width:min(560px,calc(100% - 32px));max-height:min(78vh,720px);
   background:var(--elev);border-radius:18px;box-shadow:var(--sh-3);z-index:90;display:flex;flex-direction:column;opacity:0;pointer-events:none;
   transition:opacity .22s,transform .22s cubic-bezier(.2,.8,.3,1)}
+.glass .dlg{background:color-mix(in srgb,var(--elev) 80%,transparent);
+  -webkit-backdrop-filter:saturate(190%) blur(36px);backdrop-filter:saturate(190%) blur(36px);
+  box-shadow:var(--sh-3),inset 0 .5px 0 var(--glass-hi),inset 0 0 0 .5px var(--sep)}
+.glass .dlg .field input,.glass .dlg .field textarea,.glass .dlg .review{background:color-mix(in srgb,var(--field) 60%,transparent)}
 .dlg.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
 .dlg-head{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:.5px solid var(--sep)}
 .dlg-head h2{font-size:16px;font-weight:620;letter-spacing:-.025em;margin:0;flex:1}
@@ -278,7 +292,7 @@ svg.chart .gl{stroke:var(--sep)}
 .textout{width:100%;height:220px;background:var(--field);border:none;border-radius:12px;padding:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.45;outline:none;resize:vertical;white-space:pre;overflow:auto}
 
 /* ============ 토스트 / 드롭 ============ */
-.toast{position:fixed;left:50%;bottom:max(28px,calc(env(safe-area-inset-bottom) + 74px));transform:translate(-50%,14px);
+.toast{position:fixed;left:50%;bottom:max(28px,calc(env(safe-area-inset-bottom) + 92px));transform:translate(-50%,14px);
   background:rgba(28,28,30,.94);color:#fff;padding:11px 17px;border-radius:12px;font-size:14px;z-index:120;opacity:0;pointer-events:none;
   transition:opacity .22s,transform .22s;box-shadow:var(--sh-2);max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -287,13 +301,19 @@ svg.chart .gl{stroke:var(--sep)}
 .drop.show{display:flex}
 
 /* ============ 모바일 탭바 ============ */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:none;background:var(--glass);border-top:.5px solid var(--sep);
-  padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
-.glass .tabbar{-webkit-backdrop-filter:saturate(180%) blur(26px);backdrop-filter:saturate(180%) blur(26px)}
-body.noglass .tabbar{background:var(--elev)}
+.tabbar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:50;display:none;
+  border-radius:24px;padding:5px 6px;background:var(--glass);
+  box-shadow:0 12px 36px rgba(0,0,0,.2),0 1px 2px rgba(0,0,0,.08),inset 0 .5px 0 var(--glass-hi),inset 0 0 0 .5px var(--sep)}
+.glass .tabbar{-webkit-backdrop-filter:saturate(200%) blur(32px);backdrop-filter:saturate(200%) blur(32px)}
+body.noglass .tabbar{left:0;right:0;bottom:0;border-radius:0;background:var(--elev);border-top:.5px solid var(--sep);
+  box-shadow:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
 .tabbar .in{display:flex;max-width:520px;margin:0 auto}
-.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0;font-size:10.5px;color:var(--text-3);font-weight:500}
-.tabbar button.on{color:var(--accent)}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;border-radius:18px;
+  font-size:10.5px;color:var(--text-3);font-weight:500;transition:background .2s,color .18s,transform .12s}
+.tabbar button:active{transform:scale(.94)}
+.tabbar button.on{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);
+  box-shadow:inset 0 .5px 0 var(--glass-hi)}
+body.noglass .tabbar button.on{background:none}
 
 @media (max-width:820px){
   .bar-in{padding:9px 14px;gap:9px}
@@ -357,6 +377,7 @@ body.noglass .tabbar{background:var(--elev)}
         <button data-act="csv">CSV로 내보내기</button>
         <button data-act="import">파일에서 가져오기</button>
         <button data-act="snaps">복구 지점 열기</button>
+        <button data-act="fixdates">발매일 일괄 채우기</button>
         <div class="div"></div>
         <div class="lab">동기화</div>
         <button data-act="sync">지금 동기화</button>
@@ -743,6 +764,7 @@ function normalize(d) {
     out.albums.push({
       id, title: a.title || "제목 없음", artist: a.artist || "",
       artistKey: akey(a.artist), year: String(a.year || ""), genre: a.genre || "",
+      date: (a.date || "").slice(0, 10), titleTrackId: a.titleTrackId || null,
       cover: a.cover || a.coverUrl || "", appleId: a.appleId || null,
       rating: isNum(a.rating) ? clamp(r1(a.rating)) : null,
       review: a.review || "", added: a.added || now(),
@@ -781,6 +803,7 @@ function mkTrack(t, albumId, fallbackArtist, i) {
 
 /* ==================== 파생 조회 ==================== */
 const album = (id) => db.albums.find(a => a.id === id);
+const isTitleTrack = (t) => !!(t.albumId && (album(t.albumId) || {}).titleTrackId === t.id);
 const track = (id) => db.tracks.find(t => t.id === id);
 const albumTracks = (id) => db.tracks.filter(t => t.albumId === id).sort((a, b) => (a.disc - b.disc) || (a.no - b.no));
 const albumTitleOf = (t) => t.albumId ? ((album(t.albumId) || {}).title || t.album || "") : (t.album || "싱글");
@@ -999,9 +1022,27 @@ async function itSearch(term, kind, country, limit) {
 }
 const rowToAlbum = (r) => ({
   appleId: r.collectionId, title: r.collectionName || "", artist: r.collectionArtistName || r.artistName || "",
-  year: (r.releaseDate || "").slice(0, 4), genre: r.primaryGenreName || "",
+  year: (r.releaseDate || "").slice(0, 4), date: (r.releaseDate || "").slice(0, 10), genre: r.primaryGenreName || "",
   cover: big(r.artworkUrl100), n: r.trackCount || 0
 });
+/* 앨범 자체 정보(발매일 등)를 한 건 조회한다. */
+async function fetchAlbumMeta(appleId, country) {
+  for (const c of [country, null]) {
+    let d;
+    try { d = await apiGet(`https://itunes.apple.com/lookup?id=${appleId}${c ? `&country=${c}` : ""}`); } catch (e) { continue; }
+    const r = (d.results || []).find(x => x.collectionId === appleId) || (d.results || [])[0];
+    if (r && r.releaseDate) return rowToAlbum(r);
+  }
+  return null;
+}
+const fmtDate = (s) => {
+  if (!s) return "";
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return String(s);
+  return `${m[1]}년 ${+m[2]}월 ${+m[3]}일`;
+};
+/* 날짜를 모르는 앨범은 같은 해 안에서 맨 뒤로 (최신순 기준). */
+const sortKeyDate = (a) => a.date || (a.year ? a.year + "-00-00" : "");
 async function searchAlbums(term, country) {
   const rows = await itSearch(term, "album", country);
   return rows.map(rowToAlbum).filter(a => a.title);
@@ -1199,7 +1240,7 @@ function albumsVisible() {
     if (s === "rating") return (isNum(b.rating) ? b.rating : -1) - (isNum(a.rating) ? a.rating : -1);
     if (s === "title") return a.title.localeCompare(b.title, "ko");
     if (s === "artist") return (a.artist || "").localeCompare(b.artist || "", "ko") || a.title.localeCompare(b.title, "ko");
-    if (s === "year") return String(b.year || "").localeCompare(String(a.year || ""));
+    if (s === "year") return sortKeyDate(b).localeCompare(sortKeyDate(a)) || a.title.localeCompare(b.title, "ko");
     return (b.added || 0) - (a.added || 0);
   });
   return list;
@@ -1465,6 +1506,16 @@ function renderAlbumSheet() {
       </div>
     </div>
 
+    <div class="sec">
+      <h3>상세 정보</h3>
+      <div class="cmprow"><span>발매일</span><b>${a.date ? esc(fmtDate(a.date)) : (a.year ? esc(a.year) + "년" : "–")}</b></div>
+      <div class="cmprow"><span>타이틀 곡</span><b>${a.titleTrackId && track(a.titleTrackId) ? esc(track(a.titleTrackId).title) : "–"}</b></div>
+      <div class="cmprow"><span>장르</span><b>${esc(a.genre || "–")}</b></div>
+      <div class="cmprow"><span>추가한 날</span><b>${new Date(a.added).toLocaleDateString("ko-KR")}</b></div>
+      ${!a.date && a.appleId ? `<div class="rate-actions" style="margin-top:10px">
+        <button class="btn" id="getDate">발매일 가져오기</button><span class="hint" id="dHint"></span></div>` : ""}
+    </div>
+
     <div class="sec" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <button class="btn" id="editMeta">앨범 정보 수정</button>
       <button class="btn ghost del" id="delAlbum" style="margin-left:auto">앨범 삭제</button>
@@ -1504,6 +1555,12 @@ function renderAlbumSheet() {
     save(); renderSheet();
   };
   $("#refetch").onclick = () => refetchTracks(a);
+  if ($("#getDate")) $("#getDate").onclick = async () => {
+    $("#dHint").innerHTML = `<span class="spin"></span> 가져오는 중…`;
+    const m = await fetchAlbumMeta(a.appleId, db.settings.country);
+    if (m && m.date) { a.date = m.date; if (!a.year) a.year = m.year; save(); renderSheet(); toast("발매일을 채웠습니다"); }
+    else $("#dHint").textContent = "발매일을 찾지 못했습니다";
+  };
   $("#editMeta").onclick = () => openManual(a);
   $("#delAlbum").onclick = () => {
     if (!confirm(`"${a.title}"과(와) 수록곡 기록을 삭제할까요?\n\n삭제한 뒤에도 Ctrl+Z(맥은 ⌘Z)로 되돌릴 수 있습니다.`)) return;
@@ -1518,7 +1575,7 @@ function albTrackHTML(t) {
   const open = ui.openTrack === t.id;
   return `<div class="trow ${open ? "open" : ""}" data-id="${t.id}">
       <span class="no">${t.no}</span>
-      <span class="tt">${esc(t.title)}</span>
+      <span class="tt">${esc(t.title)}${isTitleTrack(t) ? ` <span class="ttag">타이틀</span>` : ""}</span>
       <span class="dur">${dur(t.ms)}</span>
       ${scoreHTML(t.rating)}
     </div>
@@ -1529,6 +1586,7 @@ function albTrackHTML(t) {
       </div>
       <div class="line"><input class="note" placeholder="이 곡에 대한 메모" value="${esc(t.review)}"></div>
       <div class="marks">${[6, 7, 7.5, 8, 8.5, 9, 9.5, 10].map(v => `<button class="mark" data-v="${v}">${fmt(v)}</button>`).join("")}
+        <button class="mark astitle">${isTitleTrack(t) ? "타이틀 곡 해제" : "타이틀 곡으로"}</button>
         <button class="mark topage">곡 페이지 열기</button></div>
     </div>` : ""}`;
 }
@@ -1552,6 +1610,12 @@ function bindAlbumTracks(a) {
   $(".tclear", box).onclick = () => { set(null); rng.value = 0; };
   $(".note", box).addEventListener("input", (e) => { t.review = e.target.value; save(); });
   $$(".mark[data-v]", box).forEach(b => b.onclick = () => { set(parseFloat(b.dataset.v)); rng.value = b.dataset.v; });
+  $(".astitle", box).onclick = () => {
+    const alb = t.albumId ? album(t.albumId) : null;
+    if (!alb) return;
+    alb.titleTrackId = alb.titleTrackId === t.id ? null : t.id;
+    save(); renderSheet();
+  };
   $(".topage", box).onclick = () => openSheet("track", t.id);
 }
 function syncAvgBtn(a) {
@@ -1623,9 +1687,9 @@ function renderTrackSheet() {
       <div class="hero-row">
         <div class="hero-art" style="${cov ? "" : `background:${fauxCover(t.title, t.artist)}`}">${cov ? `<img src="${esc(cov)}" alt="">` : ""}</div>
         <div style="min-width:0">
-          <h1>${esc(t.title)}</h1>
+          <h1>${esc(t.title)}${isTitleTrack(t) ? ` <span class="ttag" style="vertical-align:middle">타이틀</span>` : ""}</h1>
           <div class="who">${creditLinks(t.artist)}</div>
-          <div class="facts">${[a ? dispT(a.title) : (t.album || "싱글"), dur(t.ms), a && a.year ? a.year : ""].filter(Boolean).map(esc).join(" · ")}</div>
+          <div class="facts">${[a ? dispT(a.title) : (t.album || "싱글"), dur(t.ms), a ? (a.date ? fmtDate(a.date) : (a.year || "")) : ""].filter(Boolean).map(esc).join(" · ")}</div>
         </div>
       </div>
     </div>
@@ -1709,7 +1773,7 @@ function renderArtistSheet() {
   const cov = (a.albums.find(x => x.cover) || {}).cover || "";
   tintFrom(cov);
   const rated = a.tracks.filter(t => isNum(t.rating)).sort((x, y) => y.rating - x.rating);
-  const albs = a.albums.slice().sort((x, y) => String(y.year || "").localeCompare(String(x.year || "")));
+  const albs = a.albums.slice().sort((x, y) => sortKeyDate(y).localeCompare(sortKeyDate(x)));
   const dist = histo(a.tracks.map(t => t.rating).filter(isNum));
   el.sheetBody.innerHTML = `
     <div class="hero">
@@ -1748,7 +1812,7 @@ function renderArtistSheet() {
       <div class="discog">${albs.map(x => `
         <button class="card" data-aid="${x.id}">
           <div class="art">${artHTML(x)}${badgeHTML(x.rating)}</div>
-          <div class="meta"><div class="t">${esc(dispT(x.title))}</div><div class="dyear">${esc(x.year || "")}</div></div>
+          <div class="meta"><div class="t">${esc(dispT(x.title))}</div><div class="dyear">${esc(x.date ? x.date.slice(0, 7).replace("-", ". ") : (x.year || ""))}</div></div>
         </button>`).join("") || `<p class="hint">등록된 앨범이 없습니다.</p>`}</div>
     </div>
 
@@ -2236,7 +2300,7 @@ async function addFromResult(r, btn) {
   mark("앨범 추가");
   const a = {
     id: uid("a"), title: r.title, artist: r.artist, artistKey: akey(r.artist),
-    year: r.year, genre: r.genre, cover: r.cover, appleId: r.appleId,
+    year: r.year, date: r.date || "", titleTrackId: null, genre: r.genre, cover: r.cover, appleId: r.appleId,
     rating: null, review: "", added: now(), ratedAt: null
   };
   db.albums.push(a);
@@ -2295,7 +2359,7 @@ async function runBulk() {
       }
       const a = {
         id: uid("a"), title: r.title, artist: r.artist, artistKey: akey(r.artist),
-        year: r.year, genre: r.genre, cover: r.cover, appleId: r.appleId,
+        year: r.year, date: r.date || "", titleTrackId: null, genre: r.genre, cover: r.cover, appleId: r.appleId,
         rating: null, review: "", added: now(), ratedAt: null
       };
       db.albums.push(a);
@@ -2325,7 +2389,7 @@ function manualHTML(a) {
     <label class="field"><span>앨범명</span><input id="mTitle" value="${esc(a ? a.title : "")}" placeholder="필수"></label>
     <div class="two">
       <label class="field"><span>아티스트</span><input id="mArtist" value="${esc(a ? a.artist : "")}"></label>
-      <label class="field"><span>발매 연도</span><input id="mYear" value="${esc(a ? a.year : "")}" inputmode="numeric" placeholder="2024"></label>
+      <label class="field"><span>발매일</span><input id="mDate" value="${esc(a ? (a.date || a.year) : "")}" placeholder="2024-11-22 또는 2024"></label>
     </div>
     <div class="two">
       <label class="field"><span>장르</span><input id="mGenre" value="${esc(a ? a.genre : "")}"></label>
@@ -2346,7 +2410,10 @@ function bindManual() {
     mark(a ? "앨범 정보 수정" : "앨범 추가");
     if (a) {
       a.title = title; a.artist = $("#mArtist").value.trim(); a.artistKey = akey(a.artist);
-      a.year = $("#mYear").value.trim(); a.genre = $("#mGenre").value.trim(); a.cover = $("#mCover").value.trim();
+      const dv = $("#mDate").value.trim();
+      a.date = /^\d{4}-\d{2}-\d{2}$/.test(dv) ? dv : "";
+      a.year = dv.slice(0, 4);
+      a.genre = $("#mGenre").value.trim(); a.cover = $("#mCover").value.trim();
       for (const t of albumTracks(a.id)) if (!t.artist) { t.artist = a.artist; t.artistKey = a.artistKey; }
       save(); render(); renderSheet(); closeDlg(); toast("저장했습니다");
       return;
@@ -2354,7 +2421,9 @@ function bindManual() {
     const artist = $("#mArtist").value.trim();
     const na = {
       id: uid("a"), title, artist, artistKey: akey(artist),
-      year: $("#mYear").value.trim(), genre: $("#mGenre").value.trim(),
+      year: ($("#mDate").value.trim() || "").slice(0, 4),
+      date: /^\d{4}-\d{2}-\d{2}$/.test($("#mDate").value.trim()) ? $("#mDate").value.trim() : "",
+      titleTrackId: null, genre: $("#mGenre").value.trim(),
       cover: $("#mCover").value.trim(), appleId: null, rating: null, review: "", added: now(), ratedAt: null
     };
     db.albums.push(na);
@@ -2371,7 +2440,7 @@ function bindManual() {
       const hits = await searchAlbums(term, db.settings.country);
       if (!hits.length) { hint.textContent = "찾지 못했습니다"; return; }
       $("#mCover").value = hits[0].cover;
-      if (!$("#mYear").value) $("#mYear").value = hits[0].year;
+      if (!$("#mDate").value) $("#mDate").value = hits[0].date || hits[0].year;
       if (!$("#mGenre").value) $("#mGenre").value = hits[0].genre;
       hint.textContent = "커버를 채웠습니다";
     } catch (e) {
@@ -2379,7 +2448,7 @@ function bindManual() {
         const alt = await claudeSearchAlbums(term);
         if (!alt.length) { hint.textContent = "찾지 못했습니다"; return; }
         if (alt[0].cover) $("#mCover").value = alt[0].cover;
-        if (!$("#mYear").value) $("#mYear").value = alt[0].year;
+        if (!$("#mDate").value) $("#mDate").value = alt[0].year;
         if (!$("#mGenre").value) $("#mGenre").value = alt[0].genre;
         hint.textContent = alt[0].cover ? "Claude가 채웠습니다" : "커버 주소는 찾지 못했습니다";
       } catch (e2) { hint.textContent = "검색에 실패했습니다"; }
@@ -2406,8 +2475,8 @@ function exportJSON() {
   download(`음악기록_${stamp()}.json`, text, "application/json");
   showText("JSON 내보내기", text, `음악기록_${stamp()}.json`, "application/json");
 }
-const COLS = ["type", "album_id", "album_title", "artist", "year", "genre", "cover_url", "album_rating", "album_review",
-  "track_no", "track_title", "track_ms", "track_rating", "track_review", "rated_at"];
+const COLS = ["type", "album_id", "album_title", "artist", "year", "release_date", "genre", "cover_url", "album_rating", "album_review",
+  "track_no", "track_title", "track_ms", "track_rating", "track_review", "is_title", "rated_at"];
 const cell = (v) => {
   v = v === null || v === undefined ? "" : String(v);
   return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
@@ -2416,17 +2485,17 @@ const iso = (ms) => ms ? new Date(ms).toISOString().slice(0, 10) : "";
 function toCSV() {
   const rows = [COLS.join(",")];
   for (const a of db.albums) {
-    rows.push(["album", a.id, a.title, a.artist, a.year, a.genre, a.cover, fmt(a.rating), a.review, "", "", "", "", "", iso(a.ratedAt)].map(cell).join(","));
+    rows.push(["album", a.id, a.title, a.artist, a.year, a.date, a.genre, a.cover, fmt(a.rating), a.review, "", "", "", "", "", "", iso(a.ratedAt)].map(cell).join(","));
     for (const t of albumTracks(a.id)) {
-      rows.push(["track", a.id, a.title, t.artist || a.artist, "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, iso(t.ratedAt)].map(cell).join(","));
+      rows.push(["track", a.id, a.title, t.artist || a.artist, "", "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, isTitleTrack(t) ? "Y" : "", iso(t.ratedAt)].map(cell).join(","));
     }
   }
   for (const t of db.tracks.filter(x => !x.albumId)) {
-    rows.push(["track", "", t.album || "", t.artist, "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, iso(t.ratedAt)].map(cell).join(","));
+    rows.push(["track", "", t.album || "", t.artist, "", "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, "", iso(t.ratedAt)].map(cell).join(","));
   }
   for (const a of db.artists) {
     if (!isNum(a.rating) && !a.note) continue;
-    rows.push(["artist", "", "", a.name, "", "", "", fmt(a.rating), a.note, "", "", "", "", "", ""].map(cell).join(","));
+    rows.push(["artist", "", "", a.name, "", "", "", "", fmt(a.rating), a.note, "", "", "", "", "", "", ""].map(cell).join(","));
   }
   return "\uFEFF" + rows.join("\r\n");
 }
@@ -2477,7 +2546,9 @@ const ALIAS = {
   album_id: ["album_id", "id"],
   album_title: ["album_title", "album", "title", "앨범", "앨범명"],
   artist: ["artist", "아티스트", "가수"],
-  year: ["year", "release_year", "발매", "발매년도", "발매연도", "연도"],
+  year: ["year", "release_year", "발매년도", "발매연도", "연도"],
+  release_date: ["release_date", "date", "발매일", "발매"],
+  is_title: ["is_title", "title_track", "타이틀"],
   genre: ["genre", "장르"],
   cover_url: ["cover_url", "cover", "artwork", "image", "커버"],
   album_rating: ["album_rating", "rating", "score", "평점", "점수"],
@@ -2522,7 +2593,9 @@ function fromCSV(text) {
       a = byKey.get(k);
       if (!a) {
         a = { id: get(r, "album_id") || uid("a"), title: at || "제목 없음", artist: get(r, "artist"),
-              artistKey: akey(get(r, "artist")), year: get(r, "year"), genre: get(r, "genre"),
+              artistKey: akey(get(r, "artist")), year: get(r, "year") || get(r, "release_date").slice(0, 4),
+              date: /^\d{4}-\d{2}-\d{2}/.test(get(r, "release_date")) ? get(r, "release_date").slice(0, 10) : "",
+              titleTrackId: null, genre: get(r, "genre"),
               cover: get(r, "cover_url"), appleId: null, rating: null, review: "", added: now(), ratedAt: null };
         byKey.set(k, a); out.albums.push(a);
       }
@@ -2531,6 +2604,7 @@ function fromCSV(text) {
       if (!a) continue;
       if (get(r, "artist")) { a.artist = get(r, "artist"); a.artistKey = akey(a.artist); }
       if (get(r, "year")) a.year = get(r, "year");
+      if (/^\d{4}-\d{2}-\d{2}/.test(get(r, "release_date"))) { a.date = get(r, "release_date").slice(0, 10); if (!a.year) a.year = a.date.slice(0, 4); }
       if (get(r, "genre")) a.genre = get(r, "genre");
       if (get(r, "cover_url")) a.cover = get(r, "cover_url");
       if (get(r, "album_rating")) { a.rating = num(get(r, "album_rating")); a.ratedAt = Date.parse(get(r, "rated_at")) || now(); }
@@ -2538,8 +2612,10 @@ function fromCSV(text) {
     }
     const tt = get(r, "track_title");
     if (tt) {
+      const tid = uid("t");
+      if (a && /^(y|yes|1|true|타이틀|o)$/i.test(get(r, "is_title"))) a.titleTrackId = tid;
       out.tracks.push({
-        id: uid("t"), albumId: a ? a.id : null, no: parseInt(get(r, "track_no")) || out.tracks.length + 1, disc: 1,
+        id: tid, albumId: a ? a.id : null, no: parseInt(get(r, "track_no")) || out.tracks.length + 1, disc: 1,
         title: tt, artist: get(r, "artist") || (a ? a.artist : ""), artistKey: akey(get(r, "artist") || (a ? a.artist : "")),
         album: a ? "" : get(r, "album_title"), ms: parseInt(get(r, "track_ms")) || 0,
         rating: num(get(r, "track_rating")), review: get(r, "track_review"),
@@ -2575,6 +2651,7 @@ async function ingest(incoming, name) {
       if (a.review) hitA.review = a.review;
       if (a.cover && !hitA.cover) hitA.cover = a.cover;
       if (a.year && !hitA.year) hitA.year = a.year;
+      if (a.date && !hitA.date) hitA.date = a.date;
       if (a.genre && !hitA.genre) hitA.genre = a.genre;
       updA++;
     } else {
@@ -2653,6 +2730,24 @@ async function openSnapshots() {
     } catch (e) { toast("복구에 실패했습니다"); }
   });
   $("#snapNow").onclick = async () => { await maybeSnapshot(true); toast("복구 지점을 만들었습니다"); closeDlg(); };
+}
+
+/* 예전에 추가해서 연도만 있는 앨범들의 발매일을 애플에서 채워 넣는다. */
+async function backfillDates() {
+  const todo = db.albums.filter(a => a.appleId && !a.date);
+  if (!todo.length) return toast("모든 앨범에 발매일이 있습니다");
+  if (!confirm(`발매일이 없는 앨범 ${todo.length}장을 애플에서 조회합니다.\n한 장에 1초쯤 걸립니다. 진행할까요?`)) return;
+  mark("발매일 채우기");
+  let okN = 0;
+  for (const [i, a] of todo.entries()) {
+    setSave(`발매일 조회 ${i + 1}/${todo.length}…`);
+    const m = await fetchAlbumMeta(a.appleId, db.settings.country);
+    if (m && m.date) { a.date = m.date; if (!a.year) a.year = m.year; okN++; }
+    if (i < todo.length - 1) await new Promise(r => setTimeout(r, 900));
+  }
+  save(true); render();
+  if (ui.sheet) renderSheet();
+  toast(`${okN}장의 발매일을 채웠습니다`);
 }
 
 /* ==================== GitHub 연결 설정 ==================== */
@@ -2748,6 +2843,7 @@ el.menu.addEventListener("click", (e) => {
   else if (act === "csv") exportCSV();
   else if (act === "import") el.file.click();
   else if (act === "snaps") openSnapshots();
+  else if (act === "fixdates") backfillDates();
   else if (act === "sync") { if (ghOn()) pull(false); else openGHConfig(); }
   else if (act === "ghcfg") openGHConfig();
   else if (act === "glass") { db.settings.glass = !db.settings.glass; applyTheme(); save(); if (!db.settings.glass) document.body.style.setProperty("--tint", "transparent"); }
