@@ -620,6 +620,7 @@ async function loadAll() {
 /* ---------- 저장 ---------- */
 function save(immediate) {
   db.updatedAt = now();
+  dropArtIdx();
   dirty = true;
   if (!LS.set(KEY, JSON.stringify(db))) {
     storageOK = false;
@@ -694,6 +695,7 @@ async function push(force) {
 function adopt(res) {
   mark("저장소 내용 받기");
   db = normalize(res.data);
+  dropArtIdx();
   LS.set(KEY, JSON.stringify(db));
   gh.sha = res.sha; gh.lastSync = now(); saveGH();
   syncing = false;
@@ -809,6 +811,7 @@ function undo() {
 
 /* ==================== 정규화 · 마이그레이션 ==================== */
 function normalize(d) {
+  _artIdx = null;
   const out = {
     version: 2, albums: [], tracks: [], artists: [],
     settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true, tidy: true, doSplit: [], alias: {}, artistName: {} }, (d && d.settings) || {})
@@ -952,6 +955,28 @@ function artistList() {
   return out;
 }
 function artistByKey(k) { const p = primaryKey(k); return artistList().find(a => a.key === p); }
+
+/* 검색은 묶인 모든 표기에 걸려야 한다.
+   "한로로"로 검색해도 앨범에 "HANRORO"라고 적힌 것까지 나오도록 색인을 만든다. */
+let _artIdx = null;
+const dropArtIdx = () => { _artIdx = null; };
+function artistIndex() {
+  if (_artIdx) return _artIdx;
+  _artIdx = new Map();
+  for (const a of artistList()) {
+    _artIdx.set(a.key, [a.name, ...a.names, a.key, ...aliasesOf(a.key)].join(" ").toLowerCase());
+  }
+  return _artIdx;
+}
+function artistHay(name) {
+  const idx = artistIndex();
+  let out = String(name || "").toLowerCase();
+  for (const n of creditsOf(name)) {
+    const t = idx.get(primaryKey(akey(n)));
+    if (t) out += " " + t;
+  }
+  return out;
+}
 function setArtistMeta(key, name, patch) {
   let a = db.artists.find(x => x.key === key);
   if (!a) { a = { id: uid("r"), key, name, rating: null, note: "" }; db.artists.push(a); }
@@ -1351,7 +1376,8 @@ function albumsVisible() {
     if (ui.albFilter === "rated" && !isNum(a.rating)) return false;
     if (ui.albFilter === "unrated" && isNum(a.rating)) return false;
     if (!q) return true;
-    return hit(a.title, q) || hit(a.artist, q) || hit(a.genre, q) || hit(a.year, q);
+    return hit(a.title, q) || hit(dispT(a.title), q) || hit(artistHay(a.artist), q)
+      || hit(a.genre, q) || hit(a.year, q) || hit(a.date, q);
   });
   const s = ui.albSort;
   list.sort((a, b) => {
@@ -1420,7 +1446,10 @@ function tracksVisible() {
     if (ui.trkFilter === "rated" && !isNum(t.rating)) return false;
     if (ui.trkFilter === "unrated" && isNum(t.rating)) return false;
     if (!q) return true;
-    return hit(t.title, q) || hit(t.artist, q) || hit(albumTitleOf(t), q);
+    const alb = t.albumId ? album(t.albumId) : null;
+    return hit(t.title, q) || hit(artistHay(t.artist), q)
+      || hit(albumTitleOf(t), q) || hit(dispT(albumTitleOf(t)), q)
+      || (alb ? hit(artistHay(alb.artist), q) : false);
   });
   const s = ui.trkSort;
   list.sort((a, b) => {
@@ -1509,7 +1538,7 @@ function rateTrack(t, v) {
 /* ---------- 아티스트 ---------- */
 function renderArtists() {
   const q = ui.q.trim().toLowerCase();
-  let list = artistList().filter(a => !q || hit(a.name, q));
+  let list = artistList().filter(a => !q || hit([a.name, ...a.names, ...aliasesOf(a.key)].join(" "), q));
   list.sort((a, b) => {
     if (ui.artSort === "name") return a.name.localeCompare(b.name, "ko");
     if (ui.artSort === "count") return (b.albums.length + b.tracks.length) - (a.albums.length + a.tracks.length);
