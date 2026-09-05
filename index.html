@@ -9,7 +9,7 @@
   --sep:rgba(0,0,0,.09); --sep-2:rgba(0,0,0,.15);
   --accent:#0071e3;
   --chip:rgba(0,0,0,.045); --chip-h:rgba(0,0,0,.08); --field:rgba(0,0,0,.05);
-  --glass:rgba(255,255,255,.68); --glass-hi:rgba(255,255,255,.7); --glass-lo:rgba(0,0,0,.05);
+  --glass:rgba(255,255,255,.68); --glass-bar:rgba(255,255,255,.44); --glass-hi:rgba(255,255,255,.7); --glass-lo:rgba(0,0,0,.05);
   --sh-1:0 1px 2px rgba(0,0,0,.05);
   --sh-2:0 6px 22px rgba(0,0,0,.09);
   --sh-3:0 24px 70px rgba(0,0,0,.24);
@@ -23,7 +23,7 @@
   --sep:rgba(255,255,255,.11); --sep-2:rgba(255,255,255,.2);
   --accent:#0a84ff;
   --chip:rgba(255,255,255,.08); --chip-h:rgba(255,255,255,.14); --field:rgba(255,255,255,.07);
-  --glass:rgba(28,28,30,.66); --glass-hi:rgba(255,255,255,.14); --glass-lo:rgba(0,0,0,.4);
+  --glass:rgba(28,28,30,.66); --glass-bar:rgba(28,28,30,.42); --glass-hi:rgba(255,255,255,.14); --glass-lo:rgba(0,0,0,.4);
   --sh-1:0 1px 2px rgba(0,0,0,.4);
   --sh-2:0 6px 22px rgba(0,0,0,.5);
   --sh-3:0 24px 70px rgba(0,0,0,.75);
@@ -32,6 +32,7 @@
 
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+body.modal{overflow:hidden;position:relative}
 body{
   background:var(--bg); color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
@@ -169,6 +170,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:none;border-ra
 .sheet{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:var(--elev);z-index:80;box-shadow:var(--sh-3);
   transform:translateX(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .sheet.show{transform:none}
+body.modal .tabbar{opacity:0;pointer-events:none;transition:opacity .2s}
 .sheet-close{position:sticky;top:0;z-index:5;display:flex;justify-content:flex-end;padding:12px 16px;pointer-events:none}
 .sheet-close .btn{pointer-events:auto;background:color-mix(in srgb,var(--elev) 55%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .sheet-body{padding:0 26px 60px}
@@ -301,13 +303,14 @@ svg.chart .gl{stroke:var(--sep)}
 .drop.show{display:flex}
 
 /* ============ 모바일 탭바 ============ */
-.tabbar{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:50;display:none;
-  border-radius:24px;padding:5px 6px;background:var(--glass);
-  box-shadow:0 12px 36px rgba(0,0,0,.2),0 1px 2px rgba(0,0,0,.08),inset 0 .5px 0 var(--glass-hi),inset 0 0 0 .5px var(--sep)}
-.glass .tabbar{-webkit-backdrop-filter:saturate(200%) blur(32px);backdrop-filter:saturate(200%) blur(32px)}
-body.noglass .tabbar{left:0;right:0;bottom:0;border-radius:0;background:var(--elev);border-top:.5px solid var(--sep);
-  box-shadow:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
-.tabbar .in{display:flex;max-width:520px;margin:0 auto}
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);width:min(460px,calc(100% - 24px));
+  bottom:calc(10px + env(safe-area-inset-bottom));z-index:50;display:none;
+  border-radius:26px;padding:5px 6px;background:var(--glass-bar);
+  box-shadow:0 14px 40px rgba(0,0,0,.22),0 1px 2px rgba(0,0,0,.06),inset 0 .5px 0 var(--glass-hi),inset 0 0 0 .5px var(--sep)}
+.glass .tabbar{-webkit-backdrop-filter:saturate(220%) blur(38px);backdrop-filter:saturate(220%) blur(38px)}
+body.noglass .tabbar{left:0;right:0;bottom:0;width:auto;transform:none;border-radius:0;background:var(--elev);
+  border-top:.5px solid var(--sep);box-shadow:none;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.tabbar .in{display:flex}
 .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;border-radius:18px;
   font-size:10.5px;color:var(--text-3);font-weight:500;transition:background .2s,color .18s,transform .12s}
 .tabbar button:active{transform:scale(.94)}
@@ -381,6 +384,7 @@ body.noglass .tabbar button.on{background:none}
         <div class="div"></div>
         <div class="lab">동기화</div>
         <button data-act="sync">지금 동기화</button>
+        <button data-act="forcepull">저장소에서 다시 받기</button>
         <button data-act="ghcfg">GitHub 연결 설정…</button>
         <div class="div"></div>
         <div class="lab">검색 스토어</div>
@@ -629,18 +633,50 @@ function save(immediate) {
   if (immediate) push(); else pushT = setTimeout(push, 4000);
 }
 
-/* ---------- 올리기 ---------- */
-async function push(retry) {
+/* ---------- 올리기 ----------
+   덮어쓰기 전에 저장소를 먼저 읽어, 기록이 크게 줄어드는 업로드는 반드시 물어본다.
+   (오래된 사본을 든 기기가 조용히 최신본을 밀어내는 사고를 막는다.) */
+function shrinkWarn(remote) {
+  const rA = (remote.albums || []).length, rT = (remote.tracks || []).length;
+  const lA = db.albums.length, lT = db.tracks.length;
+  if (rA === 0 && rT === 0) return null;
+  const lost = (rA - lA >= 3) || (rT - lT >= 15) || (rA > 4 && lA < rA * 0.8);
+  if (!lost) return null;
+  return { rA, rT, lA, lT };
+}
+async function push(force) {
   if (!ghOn() || syncing) return;
   syncing = true;
-  setSave(statusText());
+  setSave("동기화 중…");
   try {
-    const payload = Object.assign({}, db);
-    delete payload.settings_token;
-    const sha = await ghWrite(payload, `기록 갱신 · 앨범 ${db.albums.length} 곡 ${db.tracks.length}`, gh.sha);
+    if (!force) {
+      let res = null;
+      try { res = await ghFetch(); } catch (e) { res = null; }
+      if (res && !res.missing) {
+        gh.sha = res.sha;
+        const w = shrinkWarn(res.data);
+        const remoteNewer = (res.data.updatedAt || 0) > (db.updatedAt || 0);
+        if (w || remoteNewer) {
+          syncing = false;
+          const when = res.data.updatedAt
+            ? new Date(res.data.updatedAt).toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })
+            : "알 수 없는 시각";
+          const msg = w
+            ? `잠깐 — 저장소에는 앨범 ${w.rA}장 · 곡 ${w.rT}곡이 있는데, 이 기기에는 앨범 ${w.lA}장 · 곡 ${w.lT}곡뿐입니다.\n` +
+              `그대로 올리면 저장소 기록이 줄어듭니다 (마지막 저장 ${when}).\n\n` +
+              `확인 = 저장소 내용을 받아옵니다 (권장)\n취소 = 이 기기 내용으로 저장소를 덮어씁니다`
+            : `다른 기기에서 더 최근에 수정했습니다 (${when}).\n\n` +
+              `확인 = 저장소 내용을 받아옵니다 (권장)\n취소 = 이 기기 내용으로 덮어씁니다`;
+          await maybeSnapshot(true);
+          if (confirm(msg)) { adopt(res); return; }
+          return push(true);
+        }
+      }
+    }
+    const sha = await ghWrite(db, `기록 갱신 · 앨범 ${db.albums.length} 곡 ${db.tracks.length}`, gh.sha);
     gh.sha = sha; gh.lastSync = now(); saveGH();
   } catch (e) {
-    if (e.conflict && !retry) {
+    if (e.conflict && !force) {
       syncing = false;
       const ok = await resolveConflict();
       if (ok === "push") return push(true);
@@ -652,6 +688,18 @@ async function push(retry) {
   }
   syncing = false;
   setSave(statusText());
+}
+/* 저장소 내용을 이 기기에 그대로 반영한다. */
+function adopt(res) {
+  mark("저장소 내용 받기");
+  db = normalize(res.data);
+  LS.set(KEY, JSON.stringify(db));
+  gh.sha = res.sha; gh.lastSync = now(); saveGH();
+  syncing = false;
+  setSave(statusText());
+  render();
+  if (ui.sheet) renderSheet();
+  toast(`저장소 내용을 받았습니다 · 앨범 ${db.albums.length}장`);
 }
 
 /* ---------- 내려받기 ---------- */
@@ -685,8 +733,16 @@ async function pull(quiet) {
     gh.lastSync = now(); saveGH();
     syncing = false;
     setSave(statusText());
-    if (lAt > rAt) push();
-    else if (!quiet) toast("이미 최신입니다");
+    if (lAt > rAt) {
+      const w = shrinkWarn(res.data);
+      if (w) {
+        setSave("확인 필요");
+        if (!quiet) toast(`저장소에 앨범 ${w.rA}장이 있는데 이 기기엔 ${w.lA}장뿐입니다`);
+        push(); // push 안에서 어느 쪽을 남길지 물어본다
+        return;
+      }
+      push();
+    } else if (!quiet) toast("이미 최신입니다");
     return;
   } catch (e) {
     setSave("동기화 실패 · " + e.message);
@@ -1438,6 +1494,7 @@ function mosaicHTML(covers, name, style) {
 function openSheet(kind, id) {
   ui.sheet = { kind, id };
   ui.openTrack = null;
+  document.body.classList.add("modal");
   el.sheet.classList.add("show");
   el.scrim.classList.add("show");
   el.sheet.scrollTop = 0;
@@ -1446,6 +1503,7 @@ function openSheet(kind, id) {
 function closeSheet() {
   ui.sheet = null;
   el.sheet.classList.remove("show");
+  if (!el.dlg.classList.contains("show")) document.body.classList.remove("modal");
   el.scrim.classList.remove("show");
   document.body.style.setProperty("--tint", "transparent");
 }
@@ -2152,10 +2210,10 @@ function openCompare() {
 }
 
 /* ==================== 추가 다이얼로그 ==================== */
-function openDlg() { el.dlg.classList.add("show"); el.scrim.classList.add("show"); }
+function openDlg() { document.body.classList.add("modal"); el.dlg.classList.add("show"); el.scrim.classList.add("show"); }
 function closeDlg() {
   el.dlg.classList.remove("show");
-  if (!ui.sheet) el.scrim.classList.remove("show");
+  if (!ui.sheet) { el.scrim.classList.remove("show"); document.body.classList.remove("modal"); }
   ui.dlg = null;
 }
 let addState = { tab: "album", results: [], busy: false, err: "", editing: null };
@@ -2732,6 +2790,21 @@ async function openSnapshots() {
   $("#snapNow").onclick = async () => { await maybeSnapshot(true); toast("복구 지점을 만들었습니다"); closeDlg(); };
 }
 
+/* 이 기기 사본이 꼬였을 때, 저장소 내용을 그대로 다시 받아온다. */
+async function forcePull() {
+  if (!ghOn()) return openGHConfig();
+  setSave("동기화 중…");
+  let res;
+  try { res = await ghFetch(); } catch (e) { return toast("저장소를 읽지 못했습니다: " + e.message); }
+  if (res.missing) return toast("저장소에 파일이 없습니다");
+  const rA = (res.data.albums || []).length, rT = (res.data.tracks || []).length;
+  if (!confirm(`저장소에는 앨범 ${rA}장 · 곡 ${rT}곡이 있습니다.\n` +
+    `이 기기의 현재 내용(앨범 ${db.albums.length}장 · 곡 ${db.tracks.length}곡)을 버리고 저장소 것으로 맞출까요?\n\n` +
+    `되돌리기 전에 복구 지점을 만들어 둡니다.`)) { setSave(statusText()); return; }
+  await maybeSnapshot(true);
+  adopt(res);
+}
+
 /* 예전에 추가해서 연도만 있는 앨범들의 발매일을 애플에서 채워 넣는다. */
 async function backfillDates() {
   const todo = db.albums.filter(a => a.appleId && !a.date);
@@ -2845,6 +2918,7 @@ el.menu.addEventListener("click", (e) => {
   else if (act === "snaps") openSnapshots();
   else if (act === "fixdates") backfillDates();
   else if (act === "sync") { if (ghOn()) pull(false); else openGHConfig(); }
+  else if (act === "forcepull") forcePull();
   else if (act === "ghcfg") openGHConfig();
   else if (act === "glass") { db.settings.glass = !db.settings.glass; applyTheme(); save(); if (!db.settings.glass) document.body.style.setProperty("--tint", "transparent"); }
   else if (act === "tidy") { db.settings.tidy = !db.settings.tidy; applyTheme(); save(); render(); if (ui.sheet) renderSheet(); }
