@@ -265,6 +265,39 @@ svg.chart{width:100%;height:auto;display:block;overflow:visible}
 svg.chart text{fill:var(--text-3);font-size:10.5px;font-family:inherit}
 svg.chart .gl{stroke:var(--sep)}
 
+/* ============ 시상 ============ */
+.awhead{text-align:center;padding:12px 0 26px}
+.awtitle{font-size:26px;font-weight:700;letter-spacing:-.04em;
+  background:linear-gradient(100deg,#b8862b,#e8c879 42%,#a8742a);-webkit-background-clip:text;background-clip:text;color:transparent}
+[data-theme="dark"] .awtitle{background:linear-gradient(100deg,#d8a84a,#ffe9ad 42%,#c9973b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.awyear{font-size:13px;color:var(--text-2);letter-spacing:.16em;margin-top:5px;font-variant-numeric:tabular-nums}
+.winner{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;margin:4px 0 14px;cursor:pointer;
+  background:linear-gradient(135deg,color-mix(in srgb,#c9a227 14%,transparent),transparent 70%);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,#c9a227 30%,transparent)}
+.winner img,.winner .ph{width:62px;height:62px;border-radius:9px;object-fit:cover;flex:none;display:block}
+.winner .wlab{font-size:11px;font-weight:700;letter-spacing:.12em;color:#a8801f}
+[data-theme="dark"] .winner .wlab{color:#e3bd57}
+.winner .wt{font-size:18px;font-weight:660;letter-spacing:-.03em;line-height:1.25;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.winner .ws{font-size:13px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.noms{display:flex;flex-direction:column;gap:2px}
+.nom{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;margin:0 -8px;transition:background .14s}
+.nom:hover{background:var(--chip)}
+.nom.won{background:color-mix(in srgb,#c9a227 10%,transparent)}
+.nomMain{display:flex;align-items:center;gap:11px;flex:1;min-width:0;cursor:pointer}
+.nom img,.nom .ph{width:38px;height:38px;border-radius:7px;object-fit:cover;flex:none;display:block}
+.nom .nt{display:block;font-size:14.5px;letter-spacing:-.015em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nom .ns{display:block;font-size:12.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.awjumps{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.awNote{width:100%;margin-top:12px;background:var(--field);border:none;border-radius:9px;padding:9px 11px;font-size:14px;outline:none}
+.awNoteView{margin:12px 0 0;font-size:14px;color:var(--text-2);line-height:1.6;padding-left:11px;
+  border-left:2.5px solid color-mix(in srgb,#c9a227 45%,transparent)}
+@media (max-width:820px){
+  .winner .wt{font-size:16.5px}
+  .nom .awWin,.nom .awRm{font-size:12px;padding:3px 7px}
+  .tabbar button{font-size:10px}
+}
+
 /* ============ 다이얼로그 ============ */
 .dlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-46%) scale(.97);width:min(560px,calc(100% - 32px));max-height:min(78vh,720px);
   background:var(--elev);border-radius:18px;box-shadow:var(--sh-3);z-index:90;display:flex;flex-direction:column;opacity:0;pointer-events:none;
@@ -352,6 +385,7 @@ body.noglass .tabbar button.on{background:none}
       <button data-view="tracks">곡</button>
       <button data-view="artists">아티스트</button>
       <button data-view="stats">통계</button>
+      <button data-view="awards">시상</button>
     </div>
     <div class="grow"></div>
     <label class="searchbox">
@@ -414,6 +448,8 @@ body.noglass .tabbar button.on{background:none}
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>아티스트</button>
     <button data-view="stats">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>통계</button>
+    <button data-view="awards">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 3h8v5a4 4 0 0 1-8 0V3z"/><path d="M8 5H5v1a3 3 0 0 0 3 3M16 5h3v1a3 3 0 0 1-3 3"/><path d="M12 12v4M9 20h6M10 20l.6-4h2.8l.6 4"/></svg>시상</button>
   </div>
 </div>
 
@@ -454,6 +490,8 @@ let db = {
 let ui = {
   view: "albums", q: "", albSort: "added", albFilter: "all",
   trkSort: "rating", trkFilter: "rated", artSort: "score",
+  pBasis: "release", pYear: "all", pMonth: "all", flagFilter: "",
+  awardYear: null, awardPhase: "full", awardEdit: false,
   sheet: null,              // {kind:'album'|'track'|'artist', id}
   openTrack: null, cmp: [], statMode: "track", dlg: null
 };
@@ -516,6 +554,33 @@ function dispT(title) {
   if (!db.settings.tidy) return title;
   const t = String(title || "").replace(TIDY_TAIL, "").trim();
   return t || title;
+}
+
+/* 내 평가가 대중 평가와 어긋나는 지점. 타이틀 곡처럼 눌러서 켜고 끈다. */
+const FLAGS = [
+  { id: "hidden", label: "과소평가", short: "과소평가", desc: "세상이 낮게 보는데 나는 높게 보는", color: "#0a9e9e" },
+  { id: "over",   label: "과대평가", short: "과대평가", desc: "다들 좋다는데 나는 아닌",         color: "#c2683c" }
+];
+const flagOf = (id) => FLAGS.find(f => f.id === id);
+const hasFlag = (x, id) => !!(x && x.flags && x.flags.includes(id));
+/* 과소평가와 과대평가는 한쪽만 켜진다. 새로 고르면 반대쪽은 풀린다. */
+function toggleFlag(x, id) {
+  if (!Array.isArray(x.flags)) x.flags = [];
+  const on = x.flags.includes(id);
+  x.flags = x.flags.filter(f => !FLAGS.some(g => g.id === f));
+  if (!on) x.flags.push(id);
+  save();
+}
+function flagTags(x) {
+  if (!x || !x.flags || !x.flags.length) return "";
+  return x.flags.map(id => {
+    const f = flagOf(id);
+    return f ? ` <span class="ttag" style="background:color-mix(in srgb,${f.color} 16%,transparent);color:${f.color}">${f.short}</span>` : "";
+  }).join("");
+}
+function flagButtons(x, cls) {
+  return FLAGS.map(f => `<button class="mark ${cls}" data-f="${f.id}" title="${esc(f.desc)}"
+    style="${hasFlag(x, f.id) ? `background:color-mix(in srgb,${f.color} 16%,transparent);color:${f.color}` : ""}">${f.label}</button>`).join("");
 }
 
 /* 커버 없는 앨범용 결정론적 그라데이션 */
@@ -813,7 +878,7 @@ function undo() {
 function normalize(d) {
   _artIdx = null;
   const out = {
-    version: 2, albums: [], tracks: [], artists: [],
+    version: 2, albums: [], tracks: [], artists: [], awards: [],
     settings: Object.assign({ theme: "auto", glass: true, country: "KR", bayes: true, tidy: true, doSplit: [], alias: {}, artistName: {} }, (d && d.settings) || {})
   };
   if (!Array.isArray(out.settings.doSplit)) out.settings.doSplit = [];
@@ -827,6 +892,7 @@ function normalize(d) {
       id, title: a.title || "제목 없음", artist: a.artist || "",
       artistKey: akey(a.artist), year: String(a.year || ""), genre: a.genre || "",
       date: (a.date || "").slice(0, 10), titleTrackId: a.titleTrackId || null,
+      flags: Array.isArray(a.flags) ? a.flags.slice() : [],
       cover: a.cover || a.coverUrl || "", appleId: a.appleId || null,
       rating: isNum(a.rating) ? clamp(r1(a.rating)) : null,
       review: a.review || "", added: a.added || now(),
@@ -840,6 +906,20 @@ function normalize(d) {
   for (const t of (d && d.tracks) || []) {
     const alb = out.albums.find(x => x.id === t.albumId);
     out.tracks.push(mkTrack(t, t.albumId || null, t.artist || (alb ? alb.artist : ""), 0));
+  }
+  for (const y of (d && d.awards) || []) {
+    if (!y || !y.year) continue;
+    out.awards.push({
+      year: String(y.year),
+      phase: ["H1", "H2", "full"].includes(y.phase) ? y.phase : "full",
+      cats: (y.cats || []).map(c => ({
+        id: c.id || uid("c"), name: c.name || "부문",
+        entity: c.entity === "album" || c.entity === "artist" ? c.entity : "track",
+        nominees: (c.nominees || []).map(n => ({ type: n.type, id: n.id })),
+        winner: c.winner && c.winner.id ? { type: c.winner.type, id: c.winner.id } : null,
+        note: c.note || ""
+      }))
+    });
   }
   for (const ar of (d && d.artists) || []) {
     if (!ar || !ar.name) continue;
@@ -858,6 +938,7 @@ function mkTrack(t, albumId, fallbackArtist, i) {
     title: t.title || "제목 없음", artist, artistKey: akey(artist),
     album: t.album || "", ms: t.ms || 0,
     rating: isNum(t.rating) ? clamp(r1(t.rating)) : null,
+    flags: Array.isArray(t.flags) ? t.flags.slice() : [],
     review: t.review || t.note || "", added: t.added || now(),
     ratedAt: t.ratedAt || (isNum(t.rating) ? (t.added || now()) : null)
   };
@@ -1186,6 +1267,66 @@ const fmtDate = (s) => {
 };
 /* 날짜를 모르는 앨범은 같은 해 안에서 맨 뒤로 (최신순 기준). */
 const sortKeyDate = (a) => a.date || (a.year ? a.year + "-00-00" : "");
+/* 기간 필터: 기준(발매/평가) × 연·월 */
+const ym = (ms) => ms ? new Date(ms).toISOString().slice(0, 7) : "";
+function periodOf(x, basis, isAlbum) {
+  if (basis === "rated") return ym(x.ratedAt);
+  if (isAlbum) return (x.date || (x.year ? x.year + "-00" : "")).slice(0, 7);
+  const alb = x.albumId ? album(x.albumId) : null;
+  return alb ? (alb.date || (alb.year ? alb.year + "-00" : "")).slice(0, 7) : "";
+}
+function inPeriod(x, isAlbum) {
+  if (ui.pYear === "all") return true;
+  const p = periodOf(x, ui.pBasis, isAlbum);
+  if (!p) return false;
+  if (p.slice(0, 4) !== ui.pYear) return false;
+  return ui.pMonth === "all" || p.slice(5, 7) === ui.pMonth;
+}
+function periodYears() {
+  const set = new Set();
+  for (const a of db.albums) {
+    if (a.date) set.add(a.date.slice(0, 4)); else if (a.year) set.add(String(a.year));
+    if (a.ratedAt) set.add(ym(a.ratedAt).slice(0, 4));
+  }
+  for (const t of db.tracks) if (t.ratedAt) set.add(ym(t.ratedAt).slice(0, 4));
+  return [...set].filter(Boolean).sort((a, b) => b.localeCompare(a));
+}
+function periodBarHTML() {
+  const years = periodYears();
+  return `<div class="seg sm" id="pBasis" style="flex:none">
+      <button data-b="release">발매</button><button data-b="rated">평가</button>
+    </div>
+    <select class="sel" id="pYear">
+      <option value="all">전체 기간</option>
+      ${years.map(y => `<option value="${y}">${y}년</option>`).join("")}
+    </select>
+    ${ui.pYear !== "all" ? `<select class="sel" id="pMonth">
+      <option value="all">1~12월</option>
+      ${Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"))
+        .map(m => `<option value="${m}">${+m}월</option>`).join("")}
+    </select>` : ""}`;
+}
+function periodNote() {
+  if (ui.pYear === "all") return "";
+  const b = ui.pBasis === "rated" ? "평가" : "발매";
+  return ` · ${ui.pYear}년${ui.pMonth === "all" ? "" : " " + (+ui.pMonth) + "월"} ${b}`;
+}
+function bindFlagSel(rerender) {
+  const f = $("#flagSel");
+  if (!f) return;
+  f.value = ui.flagFilter;
+  f.onchange = () => { ui.flagFilter = f.value; rerender(); };
+}
+function bindPeriodBar(rerender) {
+  $$("#pBasis button").forEach(b => {
+    b.classList.toggle("on", b.dataset.b === ui.pBasis);
+    b.onclick = () => { ui.pBasis = b.dataset.b; rerender(); };
+  });
+  const y = $("#pYear");
+  if (y) { y.value = ui.pYear; y.onchange = () => { ui.pYear = y.value; ui.pMonth = "all"; rerender(); }; }
+  const m = $("#pMonth");
+  if (m) { m.value = ui.pMonth; m.onchange = () => { ui.pMonth = m.value; rerender(); }; }
+}
 async function searchAlbums(term, country) {
   const rows = await itSearch(term, "album", country);
   return rows.map(rowToAlbum).filter(a => a.title);
@@ -1365,6 +1506,7 @@ function render() {
   if (ui.view === "albums") renderAlbums();
   else if (ui.view === "tracks") renderTracks();
   else if (ui.view === "artists") renderArtists();
+  else if (ui.view === "awards") renderAwards();
   else renderStats();
 }
 const hit = (s, q) => String(s || "").toLowerCase().includes(q);
@@ -1375,6 +1517,8 @@ function albumsVisible() {
   let list = db.albums.filter(a => {
     if (ui.albFilter === "rated" && !isNum(a.rating)) return false;
     if (ui.albFilter === "unrated" && isNum(a.rating)) return false;
+    if (!inPeriod(a, true)) return false;
+    if (ui.flagFilter && !hasFlag(a, ui.flagFilter)) return false;
     if (!q) return true;
     return hit(a.title, q) || hit(dispT(a.title), q) || hit(artistHay(a.artist), q)
       || hit(a.genre, q) || hit(a.year, q) || hit(a.date, q);
@@ -1413,7 +1557,12 @@ function renderAlbums() {
         <option value="added">추가한 순</option><option value="rating">점수 높은 순</option>
         <option value="title">앨범명</option><option value="artist">아티스트</option><option value="year">최신 발매순</option>
       </select>
-      <span class="count">${list.length}장${db.albums.length !== list.length ? ` / ${db.albums.length}장` : ""}</span>
+      ${periodBarHTML()}
+      <select class="sel" id="flagSel">
+        <option value="">대중 평가 비교 전체</option>
+        ${FLAGS.map(f => `<option value="${f.id}">${f.label}</option>`).join("")}
+      </select>
+      <span class="count">${list.length}장${db.albums.length !== list.length ? ` / ${db.albums.length}장` : ""}${periodNote()}</span>
     </div>
     ${list.length ? `<div class="grid" id="grid">${list.map(a => `
       <button class="card" data-id="${a.id}">
@@ -1429,6 +1578,8 @@ function renderAlbums() {
   const ss = $("#albSort");
   ss.value = ui.albSort;
   ss.onchange = () => { ui.albSort = ss.value; renderAlbums(); };
+  bindPeriodBar(renderAlbums);
+  bindFlagSel(renderAlbums);
   $$("#grid .card").forEach(c => c.onclick = () => openSheet("album", c.dataset.id));
 }
 function badgeHTML(v) {
@@ -1445,6 +1596,8 @@ function tracksVisible() {
   let list = db.tracks.filter(t => {
     if (ui.trkFilter === "rated" && !isNum(t.rating)) return false;
     if (ui.trkFilter === "unrated" && isNum(t.rating)) return false;
+    if (!inPeriod(t, false)) return false;
+    if (ui.flagFilter && !hasFlag(t, ui.flagFilter)) return false;
     if (!q) return true;
     const alb = t.albumId ? album(t.albumId) : null;
     return hit(t.title, q) || hit(artistHay(t.artist), q)
@@ -1475,8 +1628,13 @@ function renderTracks() {
         <option value="added">추가한 순</option><option value="title">곡명</option>
         <option value="artist">아티스트</option><option value="album">앨범</option>
       </select>
-      <button class="btn" id="pickRandom">아무 곡이나 하나</button>
-      <span class="count">${list.length}곡 · 평가 ${rated}곡</span>
+      ${periodBarHTML()}
+      <select class="sel" id="flagSel">
+        <option value="">대중 평가 비교 전체</option>
+        ${FLAGS.map(f => `<option value="${f.id}">${f.label}</option>`).join("")}
+      </select>
+      <button class="btn" id="pickRandom">아무 곡이나</button>
+      <span class="count">${list.length}곡 · 평가 ${rated}곡${periodNote()}</span>
     </div>
     ${list.length ? `
     <div class="thead">
@@ -1493,6 +1651,8 @@ function renderTracks() {
   const ss = $("#trkSort");
   ss.value = ui.trkSort;
   ss.onchange = () => { ui.trkSort = ss.value; renderTracks(); };
+  bindPeriodBar(renderTracks);
+  bindFlagSel(renderTracks);
   const rnd = $("#pickRandom");
   if (rnd) rnd.onclick = () => {
     const pool = db.tracks.filter(t => !isNum(t.rating));
@@ -1520,7 +1680,7 @@ function trackRowHTML(t, i) {
     <span class="main">
       ${cov ? `<img class="mini" src="${esc(cov)}" alt="" loading="lazy">` : `<span class="mini" style="background:${fauxCover(alb, t.artist)}"></span>`}
       <span style="min-width:0">
-        <span class="tt" style="display:block">${esc(t.title)}</span>
+        <span class="tt" style="display:block">${esc(t.title)}${flagTags(t)}</span>
         <span class="sub2">${esc(t.artist)}${alb ? " · " + esc(alb) : ""}</span>
       </span>
     </span>
@@ -1618,7 +1778,7 @@ function renderAlbumSheet() {
       <div class="hero-row">
         <div class="hero-art">${artHTML(a)}</div>
         <div style="min-width:0">
-          <h1>${esc(dispT(a.title))}</h1>
+          <h1>${esc(dispT(a.title))}${flagTags(a)}</h1>
           <div class="who">${creditLinks(a.artist)}</div>
           <div class="facts">${[a.year, a.genre, ts.length ? ts.length + "곡" : ""].filter(Boolean).map(esc).join(" · ")}</div>
         </div>
@@ -1637,6 +1797,11 @@ function renderAlbumSheet() {
         <button class="btn ghost" id="clearRate">지우기</button>
         <span class="hint">숫자를 좌우로 끌거나 슬라이더로 · 0.1점 단위</span>
       </div>
+    </div>
+
+    <div class="sec">
+      <h3>내 평가 vs 대중 평가</h3>
+      <div class="marks">${flagButtons(a, "aflag")}</div>
     </div>
 
     <div class="sec">
@@ -1663,6 +1828,14 @@ function renderAlbumSheet() {
       <div class="cmprow"><span>추가한 날</span><b>${new Date(a.added).toLocaleDateString("ko-KR")}</b></div>
       ${!a.date && a.appleId ? `<div class="rate-actions" style="margin-top:10px">
         <button class="btn" id="getDate">발매일 가져오기</button><span class="hint" id="dHint"></span></div>` : ""}
+    </div>
+
+    <div class="sec">
+      <h3>시상 후보</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select class="sel" id="nomCat" style="flex:1;min-width:170px">${catOptions("album")}</select>
+        <button class="btn" id="nomAdd">후보로 추가</button>
+      </div>
     </div>
 
     <div class="sec" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -1694,6 +1867,7 @@ function renderAlbumSheet() {
   $("#clearRate").onclick = () => applyAlbum(null);
   if ($("#useAvg")) $("#useAvg").onclick = () => applyAlbum(trackAvg(a.id));
   $("#albRev").addEventListener("input", (e) => { a.review = e.target.value; save(); });
+  $$(".aflag").forEach(b => b.onclick = () => { toggleFlag(a, b.dataset.f); render(); renderSheet(); });
   bindCredits();
 
   $("#addTrack").onclick = () => {
@@ -1704,6 +1878,7 @@ function renderAlbumSheet() {
     save(); renderSheet();
   };
   $("#refetch").onclick = () => refetchTracks(a);
+  bindNomAdd("album", a.id);
   if ($("#getDate")) $("#getDate").onclick = async () => {
     $("#dHint").innerHTML = `<span class="spin"></span> 가져오는 중…`;
     const m = await fetchAlbumMeta(a.appleId, db.settings.country);
@@ -1724,7 +1899,7 @@ function albTrackHTML(t) {
   const open = ui.openTrack === t.id;
   return `<div class="trow ${open ? "open" : ""}" data-id="${t.id}">
       <span class="no">${t.no}</span>
-      <span class="tt">${esc(t.title)}${isTitleTrack(t) ? ` <span class="ttag">타이틀</span>` : ""}</span>
+      <span class="tt">${esc(t.title)}${isTitleTrack(t) ? ` <span class="ttag">타이틀</span>` : ""}${flagTags(t)}</span>
       <span class="dur">${dur(t.ms)}</span>
       ${scoreHTML(t.rating)}
     </div>
@@ -1735,8 +1910,9 @@ function albTrackHTML(t) {
       </div>
       <div class="line"><input class="note" placeholder="이 곡에 대한 메모" value="${esc(t.review)}"></div>
       <div class="marks">${[6, 7, 7.5, 8, 8.5, 9, 9.5, 10].map(v => `<button class="mark" data-v="${v}">${fmt(v)}</button>`).join("")}
-        <button class="mark astitle">${isTitleTrack(t) ? "타이틀 곡 해제" : "타이틀 곡으로"}</button>
-        <button class="mark topage">곡 페이지 열기</button></div>
+        <button class="mark astitle">${isTitleTrack(t) ? "타이틀 해제" : "타이틀 곡"}</button>
+        <button class="mark topage">곡 페이지</button></div>
+      <div class="marks">${flagButtons(t, "tflag")}</div>
     </div>` : ""}`;
 }
 function bindAlbumTracks(a) {
@@ -1759,6 +1935,7 @@ function bindAlbumTracks(a) {
   $(".tclear", box).onclick = () => { set(null); rng.value = 0; };
   $(".note", box).addEventListener("input", (e) => { t.review = e.target.value; save(); });
   $$(".mark[data-v]", box).forEach(b => b.onclick = () => { set(parseFloat(b.dataset.v)); rng.value = b.dataset.v; });
+  $$(".tflag", box).forEach(b => b.onclick = () => { toggleFlag(t, b.dataset.f); renderSheet(); });
   $(".astitle", box).onclick = () => {
     const alb = t.albumId ? album(t.albumId) : null;
     if (!alb) return;
@@ -1836,7 +2013,7 @@ function renderTrackSheet() {
       <div class="hero-row">
         <div class="hero-art" style="${cov ? "" : `background:${fauxCover(t.title, t.artist)}`}">${cov ? `<img src="${esc(cov)}" alt="">` : ""}</div>
         <div style="min-width:0">
-          <h1>${esc(t.title)}${isTitleTrack(t) ? ` <span class="ttag" style="vertical-align:middle">타이틀</span>` : ""}</h1>
+          <h1>${esc(t.title)}${isTitleTrack(t) ? ` <span class="ttag" style="vertical-align:middle">타이틀</span>` : ""}${flagTags(t)}</h1>
           <div class="who">${creditLinks(t.artist)}</div>
           <div class="facts">${[a ? dispT(a.title) : (t.album || "싱글"), dur(t.ms), a ? (a.date ? fmtDate(a.date) : (a.year || "")) : ""].filter(Boolean).map(esc).join(" · ")}</div>
         </div>
@@ -1857,6 +2034,11 @@ function renderTrackSheet() {
     </div>
 
     <div class="sec">
+      <h3>내 평가 vs 대중 평가</h3>
+      <div class="marks">${flagButtons(t, "sflag")}</div>
+    </div>
+
+    <div class="sec">
       <h3>곡 메모</h3>
       <textarea class="review" id="trkRev" placeholder="이 곡에 대해 남길 말">${esc(t.review)}</textarea>
     </div>
@@ -1870,6 +2052,14 @@ function renderTrackSheet() {
       </div>`).join("")}</div>
       <div class="rate-actions" style="margin-top:12px"><button class="btn" id="toAlbum">앨범 페이지 열기</button></div>
     </div>` : ""}
+
+    <div class="sec">
+      <h3>시상 후보</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <select class="sel" id="nomCat" style="flex:1;min-width:170px">${catOptions("track")}</select>
+        <button class="btn" id="nomAdd">후보로 추가</button>
+      </div>
+    </div>
 
     <div class="sec" style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn" id="renameTrack">곡 정보 수정</button>
@@ -1897,9 +2087,11 @@ function renderTrackSheet() {
   bindScore(bigv, () => t.rating, (v) => apply(v, "big"));
   $("#clearRate").onclick = () => apply(null);
   $("#trkRev").addEventListener("input", (e) => { t.review = e.target.value; save(); });
+  $$(".sflag").forEach(b => b.onclick = () => { toggleFlag(t, b.dataset.f); render(); renderSheet(); });
   bindCredits();
   if ($("#toAlbum")) $("#toAlbum").onclick = () => openSheet("album", t.albumId);
   $$(".sec .lrow").forEach(r => r.onclick = () => { if (r.dataset.id !== t.id) openSheet("track", r.dataset.id); });
+  bindNomAdd("track", t.id);
   $("#renameTrack").onclick = () => {
     const name = prompt("곡 제목", t.title);
     if (name === null) return;
@@ -2257,6 +2449,28 @@ function renderStats() {
       <div class="stat"><div class="k">아티스트</div><div class="v">${arts.length}</div><div class="s">기록에 등장한 수</div></div>
     </div>
 
+    ${(() => {
+      const rows = FLAGS.map(f => ({ f,
+        t: db.tracks.filter(x => hasFlag(x, f.id)), a: db.albums.filter(x => hasFlag(x, f.id)) }))
+        .filter(r => r.t.length || r.a.length);
+      if (!rows.length) return "";
+      const lo = db.tracks.filter(x => hasFlag(x, "hidden")).map(x => x.rating).filter(isNum);
+      const hi = db.tracks.filter(x => hasFlag(x, "over")).map(x => x.rating).filter(isNum);
+      const gapNote = (lo.length && hi.length)
+        ? `과소평가로 찍은 곡엔 평균 ${fmt(r1(mean(lo)))}, 과대평가로 찍은 곡엔 평균 ${fmt(r1(mean(hi)))}을 줬습니다.`
+        : "세상의 평가와 내 점수가 갈리는 지점";
+      return `<div class="panel">
+        <h3>내 평가 vs 대중 평가</h3><p class="cap">${esc(gapNote)}</p>
+        <div class="statgrid" style="margin:0">${rows.map(r => {
+          const v = r.t.map(x => x.rating).filter(isNum);
+          return `<div class="stat" style="cursor:pointer" data-flag="${r.f.id}">
+            <div class="k" style="color:${r.f.color}">${r.f.label}</div>
+            <div class="v" style="font-size:22px">${r.t.length + r.a.length}</div>
+            <div class="s">${v.length ? `평균 ${fmt(r1(mean(v)))}` : "&nbsp;"}</div></div>`;
+        }).join("")}</div>
+      </div>`;
+    })()}
+
     <div class="panel">
       <div class="panel-head">
         <div><h3>채점 성향</h3><p class="cap">${T.length ? `${ui.statMode === "album" ? "앨범" : "곡"} 점수가 어디에 몰려 있는지` : "곡에 점수를 매기면 분포가 나타납니다"}</p></div>
@@ -2338,6 +2552,314 @@ function renderStats() {
   $$(".rank[data-tid]").forEach(r => r.onclick = () => openSheet("track", r.dataset.tid));
   $$(".rank[data-aid]").forEach(r => r.onclick = () => openSheet("album", r.dataset.aid));
   $$(".rank[data-key]").forEach(r => r.onclick = () => openSheet("artist", r.dataset.key));
+  $$("[data-flag]").forEach(el2 => el2.onclick = () => {
+    ui.flagFilter = el2.dataset.flag; ui.trkFilter = "all"; ui.view = "tracks";
+    window.scrollTo({ top: 0 }); render();
+  });
+}
+
+/* ==================== 시상 ====================
+   점수는 점수고 시상은 시상이다. 후보는 그 해 발매작에서 자동으로 채워 주되,
+   수상작은 직접 고른다. 8.9점이 9.1점보다 올해의 앨범일 수 있으니까. */
+const PRESET_CATS = [
+  { name: "올해의 앨범", entity: "album" },
+  { name: "올해의 노래", entity: "track" },
+  { name: "올해의 아티스트", entity: "artist" }
+];
+function awardYearsAvail() {
+  const set = new Set(db.awards.map(a => a.year));
+  for (const a of db.albums) {
+    const y = (a.date || "").slice(0, 4) || String(a.year || "");
+    if (y) set.add(y);
+  }
+  return [...set].filter(Boolean).sort((a, b) => b.localeCompare(a));
+}
+const PHASES = [
+  { id: "H1", label: "상반기", note: "1~6월 발매", from: "01", to: "06" },
+  { id: "H2", label: "하반기", note: "7~12월 발매", from: "07", to: "12" },
+  { id: "full", label: "연간", note: "그 해 전체", from: "01", to: "12" }
+];
+const phaseOf = (id) => PHASES.find(p => p.id === id) || PHASES[2];
+const awardOf = (y, ph) => db.awards.find(a => a.year === String(y) && a.phase === (ph || "full"));
+function ensureAward(y, ph) {
+  let a = awardOf(y, ph);
+  if (!a) { a = { year: String(y), phase: ph || "full", cats: [] }; db.awards.push(a); }
+  return a;
+}
+/* 발매 시점이 그 구간에 드는지 */
+function inPhase(dateStr, year, ph) {
+  const p = phaseOf(ph);
+  const d = String(dateStr || "");
+  if (d.slice(0, 4) !== String(year)) return false;
+  if (p.id === "full") return true;
+  const mm = d.slice(5, 7);
+  if (!mm || mm === "00") return true;   // 월을 모르면 일단 양쪽 후보에 올린다 (화면에 표시)
+  return mm >= p.from && mm <= p.to;
+}
+/* 발매 월을 모르는 항목인지 — 반기 시상에서 안내를 띄우는 데 쓴다 */
+function monthUnknown(n) {
+  const a = n.type === "album" ? album(n.id)
+    : n.type === "track" ? ((track(n.id) || {}).albumId ? album(track(n.id).albumId) : null) : null;
+  if (!a) return false;
+  const mm = String(a.date || "").slice(5, 7);
+  return !mm || mm === "00";
+}
+/* 그 해 발매작 중 상위 n개를 후보로 */
+const albDate = (a) => a ? (a.date || (a.year ? a.year + "-00-00" : "")) : "";
+function autoNominees(year, entity, n, ph) {
+  const albIn = (a) => inPhase(albDate(a), year, ph);
+  const trkIn = (t) => t.albumId ? albIn(album(t.albumId)) : false;
+
+  if (entity === "album") {
+    return db.albums.filter(a => isNum(a.rating) && albIn(a))
+      .sort((x, y2) => y2.rating - x.rating).slice(0, n).map(x => ({ type: "album", id: x.id }));
+  }
+  if (entity === "track") {
+    return db.tracks.filter(t => isNum(t.rating) && trkIn(t))
+      .sort((x, y2) => y2.rating - x.rating).slice(0, n).map(x => ({ type: "track", id: x.id }));
+  }
+  const scored = artistList().map(a => {
+    const ts = a.tracks.filter(t => isNum(t.rating) && trkIn(t));
+    return { a, n: ts.length, avg: ts.length ? mean(ts.map(t => t.rating)) : null };
+  }).filter(x => x.n >= 2).sort((x, y2) => y2.avg - x.avg);
+  return scored.slice(0, n).map(x => ({ type: "artist", id: x.a.key }));
+}
+/* 연간 부문을 채울 때는 같은 해 반기 수상작을 맨 앞에 둔다. */
+function seedFromHalves(year, entity) {
+  const out = [];
+  for (const ph of ["H1", "H2"]) {
+    const aw = awardOf(year, ph);
+    if (!aw) continue;
+    for (const c of aw.cats) {
+      if (c.entity !== entity || !c.winner) continue;
+      if (!out.some(n => n.type === c.winner.type && n.id === c.winner.id)) out.push(c.winner);
+    }
+  }
+  return out;
+}
+function fillNominees(c, year, ph) {
+  const have = new Set(c.nominees.map(n => n.type + n.id));
+  const add = (list) => { for (const n of list) if (!have.has(n.type + n.id)) { have.add(n.type + n.id); c.nominees.push(n); } };
+  if (ph === "full") add(seedFromHalves(year, c.entity));
+  add(autoNominees(year, c.entity, 5, ph));
+}
+function nomInfo(n) {
+  if (n.type === "album") {
+    const a = album(n.id);
+    return a ? { title: dispT(a.title), sub: a.artist, rating: a.rating, cover: a.cover, obj: a } : null;
+  }
+  if (n.type === "track") {
+    const t = track(n.id);
+    return t ? { title: t.title, sub: `${t.artist} · ${dispT(albumTitleOf(t))}`, rating: t.rating, cover: coverOf(t), obj: t } : null;
+  }
+  const a = artistByKey(n.id);
+  return a ? { title: a.name, sub: `앨범 ${a.albums.length} · 평가 ${a.nRated}곡`, rating: isNum(a.own) ? a.own : a.trkAvg, cover: (a.albums.find(x => x.cover) || {}).cover || "", obj: a } : null;
+}
+const openNom = (n) => openSheet(n.type, n.id);
+
+/* 시트에서 바로 후보에 넣기 위한 부문 목록 */
+function catOptions(entity) {
+  const opts = [];
+  for (const aw of db.awards.slice().sort((a, b) => b.year.localeCompare(a.year) || a.phase.localeCompare(b.phase)))
+    for (const c of aw.cats) if (c.entity === entity)
+      opts.push(`<option value="${aw.year}|${aw.phase}|${c.id}">${esc(aw.year)} ${esc(phaseOf(aw.phase).label)} · ${esc(c.name)}</option>`);
+  return opts.length ? opts.join("") : `<option value="">만들어 둔 부문이 없습니다</option>`;
+}
+function bindNomAdd(type, id) {
+  const btn = $("#nomAdd");
+  if (!btn) return;
+  btn.onclick = () => {
+    const v = $("#nomCat").value;
+    if (!v) { ui.view = "awards"; closeSheet(); render(); return toast("시상 화면에서 부문을 먼저 만들어 주세요"); }
+    const [year, ph, cid] = v.split("|");
+    const c = (awardOf(year, ph) || { cats: [] }).cats.find(x => x.id === cid);
+    if (!c) return;
+    if (c.nominees.some(n => n.type === type && n.id === id)) return toast("이미 후보에 있습니다");
+    mark("후보 추가");
+    c.nominees.push({ type, id });
+    save();
+    toast(`${year} ${phaseOf(ph).label} · ${c.name} 후보에 넣었습니다`);
+  };
+}
+function renderAwards() {
+  const years = awardYearsAvail();
+  if (!ui.awardYear) ui.awardYear = (db.awards[0] && db.awards[0].year) || years[0] || String(new Date().getFullYear());
+  const y = ui.awardYear;
+  const ph = ui.awardPhase;
+  const P = phaseOf(ph);
+  const aw = awardOf(y, ph);
+  const edit = ui.awardEdit;
+
+  el.wrap.innerHTML = `
+    <div class="toolbar">
+      <select class="sel" id="awYear">
+        ${years.map(v => `<option value="${v}">${v}년</option>`).join("")}
+        ${years.includes(y) ? "" : `<option value="${y}" selected>${y}년</option>`}
+      </select>
+      <div class="seg sm" id="awPhase">
+        ${PHASES.map(p => `<button data-p="${p.id}">${p.label}</button>`).join("")}
+      </div>
+      <button class="btn ${edit ? "primary" : ""}" id="awEdit">${edit ? "편집 끝내기" : "편집"}</button>
+      ${aw && aw.cats.length ? `<span class="count">${aw.cats.filter(c => c.winner).length}/${aw.cats.length} 부문 결정</span>` : ""}
+    </div>
+
+    <div class="awhead">
+      <div class="awtitle">형진대중음악상</div>
+      <div class="awyear">${esc(y)} ${esc(P.label)}</div>
+      ${otherPhasesHTML(y, ph)}
+    </div>
+
+    ${!aw || !aw.cats.length ? `
+      <div class="empty">
+        <h2>${esc(y)} ${esc(P.label)} 시상식을 시작해 보세요</h2>
+        <p>${esc(P.note)} 작품이 대상입니다. 앨범·노래·아티스트 세 부문으로 시작하고, 부문은 얼마든지 추가할 수 있습니다.${
+          ph === "full" ? " 상·하반기 수상작이 있으면 후보 맨 앞에 올려 둡니다." : ""}</p>
+        <button class="btn primary" id="awInit">기본 부문 만들기</button>
+      </div>`
+    : aw.cats.map(c => catHTML(c, edit, ph !== "full")).join("")}
+
+    ${edit ? `<div class="panel" style="margin-top:18px">
+      <h3>부문 추가</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <input id="newCat" class="numin" style="flex:1;min-width:160px;width:auto;text-align:left;padding:0 12px" placeholder="예: 올해의 아이돌">
+        <select class="sel" id="newCatEnt">
+          <option value="track">곡</option><option value="album">앨범</option><option value="artist">아티스트</option>
+        </select>
+        <button class="btn primary" id="addCat">추가</button>
+      </div>
+    </div>` : ""}`;
+
+  const ys = $("#awYear");
+  ys.value = y;
+  ys.onchange = () => { ui.awardYear = ys.value; renderAwards(); };
+  $$("#awPhase button").forEach(b => {
+    b.classList.toggle("on", b.dataset.p === ph);
+    b.onclick = () => { ui.awardPhase = b.dataset.p; renderAwards(); };
+  });
+  $$(".awJump").forEach(b => b.onclick = () => { ui.awardPhase = b.dataset.p; renderAwards(); });
+  $("#awEdit").onclick = () => { ui.awardEdit = !edit; renderAwards(); };
+  if ($("#awInit")) $("#awInit").onclick = () => {
+    mark("시상식 만들기");
+    const a = ensureAward(y, ph);
+    for (const p of PRESET_CATS) {
+      const c = { id: uid("c"), name: p.name.replace("올해의", P.id === "full" ? "올해의" : P.label), entity: p.entity, nominees: [], winner: null, note: "" };
+      fillNominees(c, y, ph);
+      a.cats.push(c);
+    }
+    ui.awardEdit = true;
+    save(); renderAwards();
+  };
+  if ($("#addCat")) $("#addCat").onclick = () => {
+    const nm = $("#newCat").value.trim();
+    if (!nm) return toast("부문 이름을 적어 주세요");
+    mark("부문 추가");
+    const a = ensureAward(y, ph);
+    const ent = $("#newCatEnt").value;
+    a.cats.push({ id: uid("c"), name: nm, entity: ent, nominees: [], winner: null, note: "" });
+    save(); renderAwards();
+  };
+  bindAwards(y, ph);
+}
+/* 같은 해의 다른 구간으로 건너뛰는 줄 */
+function otherPhasesHTML(y, ph) {
+  const others = PHASES.filter(p => p.id !== ph && awardOf(y, p.id));
+  if (!others.length) return "";
+  return `<div class="awjumps">${others.map(p => {
+    const aw = awardOf(y, p.id);
+    const done = aw.cats.filter(c => c.winner).length;
+    return `<button class="mark awJump" data-p="${p.id}">${p.label} ${done ? `· ${done}부문` : ""}</button>`;
+  }).join("")}</div>`;
+}
+function catHTML(c, edit, warnPh) {
+  const win = c.winner ? nomInfo(c.winner) : null;
+  const noms = c.nominees.map(n => ({ n, i: nomInfo(n) })).filter(x => x.i);
+  const ent = c.entity === "album" ? "앨범" : c.entity === "artist" ? "아티스트" : "곡";
+  return `<div class="panel awcat" data-cid="${c.id}">
+    <div class="panel-head">
+      <div><h3>${esc(c.name)}</h3><p class="cap">${ent} 부문 · 후보 ${noms.length}${c._ph ? ` · ${esc(c._ph)}` : ""}</p></div>
+      ${edit ? `<div style="display:flex;gap:6px">
+        <button class="btn awFill" data-cid="${c.id}">후보 자동 채우기</button>
+        <button class="btn ghost del awDel" data-cid="${c.id}">삭제</button>
+      </div>` : ""}
+    </div>
+
+    ${win ? `<div class="winner">
+      ${win.cover ? `<img src="${esc(win.cover)}" alt="">` : `<span class="ph" style="background:${fauxCover(win.title, win.sub)}"></span>`}
+      <div style="min-width:0;flex:1">
+        <div class="wlab">수상</div>
+        <div class="wt">${esc(win.title)}</div>
+        <div class="ws">${esc(win.sub)}</div>
+      </div>
+      ${scoreHTML(win.rating, { inert: true })}
+    </div>` : `<p class="hint" style="margin:2px 0 10px">아직 수상작이 정해지지 않았습니다${edit ? " — 후보에서 고르세요" : ""}.</p>`}
+
+    ${noms.length ? `<div class="noms">${noms.map(({ n, i }) => {
+      const isWin = c.winner && c.winner.type === n.type && c.winner.id === n.id;
+      return `<div class="nom ${isWin ? "won" : ""}" data-cid="${c.id}" data-nt="${n.type}" data-ni="${esc(n.id)}">
+        <span class="nomMain">
+          ${i.cover ? `<img src="${esc(i.cover)}" alt="" loading="lazy">` : `<span class="ph" style="background:${fauxCover(i.title, i.sub)}"></span>`}
+          <span style="min-width:0">
+            <span class="nt">${esc(i.title)}${warnPh && monthUnknown(n) ? ` <span class="ttag" style="background:color-mix(in srgb,#c2683c 15%,transparent);color:#c2683c">월 미상</span>` : ""}</span>
+            <span class="ns">${esc(i.sub)}</span>
+          </span>
+        </span>
+        ${scoreHTML(i.rating, { inert: true })}
+        ${edit ? `<button class="mark awWin" data-cid="${c.id}" data-nt="${n.type}" data-ni="${esc(n.id)}">${isWin ? "수상 취소" : "수상"}</button>
+        <button class="mark awRm" data-cid="${c.id}" data-nt="${n.type}" data-ni="${esc(n.id)}">빼기</button>` : ""}
+      </div>`;
+    }).join("")}</div>` : `<p class="hint">후보가 없습니다${edit ? " — 자동 채우기를 누르거나, 앨범·곡 화면에서 추가하세요" : ""}.</p>`}
+
+    ${warnPh && noms.some(x => monthUnknown(x.n)) ? `<p class="hint" style="margin:10px 0 0;color:#c2683c">
+      발매 월을 모르는 항목이 섞여 있습니다 — 상·하반기 양쪽 후보에 오릅니다. 앨범에서 발매일을 채우면 정확해집니다.</p>` : ""}
+    ${edit ? `<input class="awNote" data-cid="${c.id}" placeholder="한 줄 심사평 (선택)" value="${esc(c.note)}">`
+      : c.note ? `<p class="awNoteView">${esc(c.note)}</p>` : ""}
+  </div>`;
+}
+function bindAwards(y, ph) {
+  const aw = awardOf(y, ph);
+  if (!aw) return;
+  const cat = (id) => aw.cats.find(c => c.id === id);
+  $$(".awFill").forEach(b => b.onclick = () => {
+    const c = cat(b.dataset.cid);
+    mark("후보 채우기");
+    fillNominees(c, y, ph);
+    save(); renderAwards();
+  });
+  $$(".awDel").forEach(b => b.onclick = () => {
+    const c = cat(b.dataset.cid);
+    if (!confirm(`"${c.name}" 부문을 삭제할까요?`)) return;
+    mark("부문 삭제");
+    aw.cats = aw.cats.filter(x => x.id !== c.id);
+    save(); renderAwards();
+  });
+  $$(".awWin").forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    const c = cat(b.dataset.cid);
+    const same = c.winner && c.winner.type === b.dataset.nt && c.winner.id === b.dataset.ni;
+    mark("수상작 지정");
+    c.winner = same ? null : { type: b.dataset.nt, id: b.dataset.ni };
+    save(); renderAwards();
+  });
+  $$(".awRm").forEach(b => b.onclick = (e) => {
+    e.stopPropagation();
+    const c = cat(b.dataset.cid);
+    mark("후보 빼기");
+    c.nominees = c.nominees.filter(n => !(n.type === b.dataset.nt && n.id === b.dataset.ni));
+    if (c.winner && c.winner.type === b.dataset.nt && c.winner.id === b.dataset.ni) c.winner = null;
+    save(); renderAwards();
+  });
+  $$(".awNote").forEach(inp => inp.addEventListener("input", () => {
+    cat(inp.dataset.cid).note = inp.value;
+    save();
+  }));
+  $$(".nom .nomMain").forEach(el2 => el2.onclick = () => {
+    const row = el2.closest(".nom");
+    openSheet(row.dataset.nt, row.dataset.ni);
+  });
+  $$(".winner").forEach(w => w.onclick = () => {
+    const c = cat(w.closest(".awcat").dataset.cid);
+    if (c && c.winner) openNom(c.winner);
+  });
 }
 
 /* ==================== 아티스트 비교 ==================== */
@@ -2848,7 +3370,7 @@ function exportJSON() {
   showText("JSON 내보내기", text, `음악기록_${stamp()}.json`, "application/json");
 }
 const COLS = ["type", "album_id", "album_title", "artist", "year", "release_date", "genre", "cover_url", "album_rating", "album_review",
-  "track_no", "track_title", "track_ms", "track_rating", "track_review", "is_title", "rated_at"];
+  "track_no", "track_title", "track_ms", "track_rating", "track_review", "is_title", "flags", "rated_at"];
 const cell = (v) => {
   v = v === null || v === undefined ? "" : String(v);
   return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
@@ -2857,17 +3379,17 @@ const iso = (ms) => ms ? new Date(ms).toISOString().slice(0, 10) : "";
 function toCSV() {
   const rows = [COLS.join(",")];
   for (const a of db.albums) {
-    rows.push(["album", a.id, a.title, a.artist, a.year, a.date, a.genre, a.cover, fmt(a.rating), a.review, "", "", "", "", "", "", iso(a.ratedAt)].map(cell).join(","));
+    rows.push(["album", a.id, a.title, a.artist, a.year, a.date, a.genre, a.cover, fmt(a.rating), a.review, "", "", "", "", "", "", (a.flags || []).join("|"), iso(a.ratedAt)].map(cell).join(","));
     for (const t of albumTracks(a.id)) {
-      rows.push(["track", a.id, a.title, t.artist || a.artist, "", "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, isTitleTrack(t) ? "Y" : "", iso(t.ratedAt)].map(cell).join(","));
+      rows.push(["track", a.id, a.title, t.artist || a.artist, "", "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, isTitleTrack(t) ? "Y" : "", (t.flags || []).join("|"), iso(t.ratedAt)].map(cell).join(","));
     }
   }
   for (const t of db.tracks.filter(x => !x.albumId)) {
-    rows.push(["track", "", t.album || "", t.artist, "", "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, "", iso(t.ratedAt)].map(cell).join(","));
+    rows.push(["track", "", t.album || "", t.artist, "", "", "", "", "", "", t.no, t.title, t.ms || "", fmt(t.rating), t.review, "", (t.flags || []).join("|"), iso(t.ratedAt)].map(cell).join(","));
   }
   for (const a of db.artists) {
     if (!isNum(a.rating) && !a.note) continue;
-    rows.push(["artist", "", "", a.name, "", "", "", "", fmt(a.rating), a.note, "", "", "", "", "", "", ""].map(cell).join(","));
+    rows.push(["artist", "", "", a.name, "", "", "", "", fmt(a.rating), a.note, "", "", "", "", "", "", "", ""].map(cell).join(","));
   }
   return "\uFEFF" + rows.join("\r\n");
 }
@@ -2921,6 +3443,7 @@ const ALIAS = {
   year: ["year", "release_year", "발매년도", "발매연도", "연도"],
   release_date: ["release_date", "date", "발매일", "발매"],
   is_title: ["is_title", "title_track", "타이틀"],
+  flags: ["flags", "표식"],
   genre: ["genre", "장르"],
   cover_url: ["cover_url", "cover", "artwork", "image", "커버"],
   album_rating: ["album_rating", "rating", "score", "평점", "점수"],
@@ -2967,7 +3490,7 @@ function fromCSV(text) {
         a = { id: get(r, "album_id") || uid("a"), title: at || "제목 없음", artist: get(r, "artist"),
               artistKey: akey(get(r, "artist")), year: get(r, "year") || get(r, "release_date").slice(0, 4),
               date: /^\d{4}-\d{2}-\d{2}/.test(get(r, "release_date")) ? get(r, "release_date").slice(0, 10) : "",
-              titleTrackId: null, genre: get(r, "genre"),
+              titleTrackId: null, flags: get(r, "flags") ? get(r, "flags").split("|").filter(Boolean) : [], genre: get(r, "genre"),
               cover: get(r, "cover_url"), appleId: null, rating: null, review: "", added: now(), ratedAt: null };
         byKey.set(k, a); out.albums.push(a);
       }
@@ -2991,6 +3514,7 @@ function fromCSV(text) {
         title: tt, artist: get(r, "artist") || (a ? a.artist : ""), artistKey: akey(get(r, "artist") || (a ? a.artist : "")),
         album: a ? "" : get(r, "album_title"), ms: parseInt(get(r, "track_ms")) || 0,
         rating: num(get(r, "track_rating")), review: get(r, "track_review"),
+        flags: get(r, "flags") ? get(r, "flags").split("|").filter(Boolean) : [],
         added: now(), ratedAt: Date.parse(get(r, "rated_at")) || (num(get(r, "track_rating")) !== null ? now() : null)
       });
     }
@@ -3024,6 +3548,7 @@ async function ingest(incoming, name) {
       if (a.cover && !hitA.cover) hitA.cover = a.cover;
       if (a.year && !hitA.year) hitA.year = a.year;
       if (a.date && !hitA.date) hitA.date = a.date;
+      if ((a.flags || []).length) hitA.flags = [...new Set([...(hitA.flags || []), ...a.flags])];
       if (a.genre && !hitA.genre) hitA.genre = a.genre;
       updA++;
     } else {
@@ -3039,12 +3564,14 @@ async function ingest(incoming, name) {
       if (isNum(t.rating)) { exist.rating = t.rating; exist.ratedAt = t.ratedAt || now(); }
       if (t.review) exist.review = t.review;
       if (t.ms && !exist.ms) exist.ms = t.ms;
+      if ((t.flags || []).length) exist.flags = [...new Set([...(exist.flags || []), ...t.flags])];
       updT++;
     } else {
       t.albumId = targetAlbum;
       db.tracks.push(t); addT++;
     }
   }
+  for (const aw of inc.awards || []) if (!db.awards.some(x => x.year === aw.year && x.phase === aw.phase)) db.awards.push(aw);
   for (const ar of inc.artists) {
     const cur = db.artists.find(x => x.key === ar.key);
     if (cur) { if (isNum(ar.rating)) cur.rating = ar.rating; if (ar.note) cur.note = ar.note; }
@@ -3261,8 +3788,8 @@ document.addEventListener("keydown", (e) => {
   if (typing) return;
   if (e.key === "/") { e.preventDefault(); $("#q").focus(); }
   else if (e.key.toLowerCase() === "n") { e.preventDefault(); openAdd(); }
-  else if (["1", "2", "3", "4"].includes(e.key)) {
-    ui.view = ["albums", "tracks", "artists", "stats"][+e.key - 1];
+  else if (["1", "2", "3", "4", "5"].includes(e.key)) {
+    ui.view = ["albums", "tracks", "artists", "stats", "awards"][+e.key - 1];
     render();
   }
 });
