@@ -189,6 +189,13 @@ body.noglass .hero .wash,body.noglass .hero::after{display:none}
 .hero .who .wl{cursor:pointer}
 .hero .who .wl:hover{text-decoration:underline}
 .hero .facts{font-size:13px;color:var(--text-2);margin-top:5px}
+.guide ul{margin:0;padding-left:18px;font-size:14.5px;line-height:1.7}
+.guide li+li{margin-top:6px}
+.guide li ul{margin-top:4px}
+.guide table{width:100%;border-collapse:collapse;font-size:14.5px}
+.guide td{padding:9px 0;border-top:.5px solid var(--sep)}
+.guide tr:first-child td{border-top:none}
+.guide td:first-child{width:96px;font-weight:650;font-variant-numeric:tabular-nums}
 .review{width:100%;min-height:76px;background:var(--field);border:none;border-radius:12px;padding:11px 13px;font-size:14.5px;line-height:1.55;resize:vertical;outline:none}
 .review::placeholder{color:var(--text-3)}
 .review:focus{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 55%,transparent)}
@@ -399,6 +406,8 @@ body.noglass .tabbar button.on{background:none}
         <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
       </button>
       <div class="menu" id="menu">
+        <button data-act="guide">평가 기준</button>
+        <div class="div"></div>
         <div class="lab">모양</div>
         <div class="row">
           <div class="seg sm" id="themeSeg" style="flex:1">
@@ -1762,7 +1771,47 @@ function renderSheet() {
   if (!ui.sheet) return;
   if (ui.sheet.kind === "album") renderAlbumSheet();
   else if (ui.sheet.kind === "track") renderTrackSheet();
+  else if (ui.sheet.kind === "guide") renderGuideSheet();
   else renderArtistSheet();
+}
+
+/* ---------- 평가 기준 시트 ---------- */
+const SCALE = [
+  [9.0, "9.0+", "손꼽히는 곡"],
+  [8.5, "8.5–8.9", "압도적으로 좋음"],
+  [8.0, "8.0–8.4", "매우 매우 좋음"],
+  [7.5, "7.5–7.9", "매우 좋음"],
+  [7.0, "7.0–7.4", "좋음+"],
+  [6.5, "6.5–6.9", "좋음"],
+  [6.0, "6.0–6.4", "좋은 편"],
+  [5.5, "5.5–5.9", "괜찮음~좋은 편"],
+  [5.0, "5.0–5.4", "보통~괜찮음"],
+  [4.5, "4.5–4.9", "애매함"],
+  [4.0, "4.0–4.4", "다소 아쉬운 편"],
+  [3.5, "3.5–3.9", "아쉬운 편"],
+  [3.0, "3.5 미만", "별로인 편"]
+];
+function renderGuideSheet() {
+  tintFrom("");
+  el.sheetBody.innerHTML = `
+    <div class="hero"><div class="hero-row"><div style="min-width:0"><h1>평가 기준</h1></div></div></div>
+    <div class="sec guide">
+      <h3>평가 기준</h3>
+      <ul>
+        <li>객관적 평가에 주관적 평가가 혼합된 형태이다. 평점에는 곡의 질과 완성도에 대한 판단과 취향에 맞는 정도가 함께 반영된다. 음악이 뛰어나다고 평가(객관)하는 동시에 내 취향에는 다소 맞지 않는 편이라고 여길(주관) 수 있다.</li>
+        <li>개인적인 팬심은 배제했으나, 일부 영향을 미칠 수 있다.</li>
+        <li>과소평가 / 과대평가는 나의 평가와 대중의 평가와 어긋나는 경우에 표시한다.
+          <ul>
+            <li>과소평가: 높게 평가하지만 대중은 낮게 평가</li>
+            <li>과대평가: 대중에 비해 뚜렷이 낮게 평가</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="sec guide">
+      <h3>음악 평점</h3>
+      <table>${SCALE.map(([v, r, f]) => `<tr><td style="color:${hue(v)}">${r}</td><td>${f}</td></tr>`).join("")}</table>
+    </div>`;
 }
 
 /* ---------- 앨범 시트 ---------- */
@@ -2474,7 +2523,10 @@ function renderStats() {
     <div class="panel">
       <div class="panel-head">
         <div><h3>채점 성향</h3><p class="cap">${T.length ? `${ui.statMode === "album" ? "앨범" : "곡"} 점수가 어디에 몰려 있는지` : "곡에 점수를 매기면 분포가 나타납니다"}</p></div>
-        <div class="seg sm" id="statMode"><button data-m="track">곡</button><button data-m="album">앨범</button></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="guideBtn">평가 기준</button>
+          <div class="seg sm" id="statMode"><button data-m="track">곡</button><button data-m="album">앨범</button></div>
+        </div>
       </div>
       ${histoSVG(H)}
       ${H.n ? `<p class="cap" style="margin:10px 0 0">가장 많이 준 구간은 ${fmt((H.bins.indexOf(H.max) + 1) / 2 - 0.4)}–${fmt((H.bins.indexOf(H.max) + 1) / 2)}점입니다.</p>` : ""}
@@ -2548,6 +2600,7 @@ function renderStats() {
     b.classList.toggle("on", b.dataset.m === ui.statMode);
     b.onclick = () => { ui.statMode = b.dataset.m; renderStats(); };
   });
+  $("#guideBtn").onclick = () => openSheet("guide");
   $("#bayesBtn").onclick = () => { db.settings.bayes = !db.settings.bayes; save(); renderStats(); };
   $$(".rank[data-tid]").forEach(r => r.onclick = () => openSheet("track", r.dataset.tid));
   $$(".rank[data-aid]").forEach(r => r.onclick = () => openSheet("album", r.dataset.aid));
@@ -3761,6 +3814,7 @@ el.menu.addEventListener("click", (e) => {
   else if (act === "sync") { if (ghOn()) pull(false); else openGHConfig(); }
   else if (act === "forcepull") forcePull();
   else if (act === "ghcfg") openGHConfig();
+  else if (act === "guide") openSheet("guide");
   else if (act === "glass") { db.settings.glass = !db.settings.glass; applyTheme(); save(); if (!db.settings.glass) document.body.style.setProperty("--tint", "transparent"); }
   else if (act === "tidy") { db.settings.tidy = !db.settings.tidy; applyTheme(); save(); render(); if (ui.sheet) renderSheet(); }
 });
